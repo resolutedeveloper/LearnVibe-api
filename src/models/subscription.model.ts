@@ -16,6 +16,8 @@ export interface ISubscription extends Document {
   CreatedBy: string;
   LastModifiedOn: Date;
   LastModifiedBy: string;
+  IsFree: boolean;
+  Price: number;
 }
 
 // 2. Define the Mongoose Schema
@@ -34,7 +36,15 @@ const SubscriptionSchema: Schema = new Schema<ISubscription>({
   CreatedBy: { type: String, required: true },
   LastModifiedOn: { type: Date, required: true },
   LastModifiedBy: { type: String, required: true },
+  IsFree: { type: Boolean, required: true },
+  Price: {type: Number, required: true },
 });
 
 // 3. Create and Export the Model
 export const Subscription = mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
+
+
+
+
+
+

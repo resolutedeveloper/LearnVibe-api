@@ -1,6 +1,14 @@
 import { Request, Response } from 'express';
 import { Subscription } from '../models/subscription.model';
 import { decrypt, encrypt } from '../utils/encrypt';
+import  Users  from '../models/user.model';
+import  UserDecrypt  from '../models/userDecrypt.model';
+import { generateToken } from '../utils/jwt';
+import UserLogin from '../models/userLogin.model';
+import useragent from 'useragent';
+import { UserSubscription } from '../models/userSubscription.model';
+const now = new Date();
+
 export const plan_list = async (req: Request, res: Response) => {
   try {
     // Fetch only active subscriptions and select specific fields
@@ -47,102 +55,107 @@ export const plan_list = async (req: Request, res: Response) => {
 export const sign_in = async (req: Request, res: Response) => {
 try {
 
-    const EmailID = decrypt(req.body.EmailID);
-    const Password = decrypt(req.body.Password);
+    const EncryptedEmail = decrypt(req.body.EmailID);
+    const EncryptedPassword = decrypt(req.body.Password);
+    console.log(EncryptedEmail + " " + EncryptedPassword);
   
-
-    const existingUser = await User.findOne({ EmailID: encryptedEmail });
-    if (existingUser) {
-      res.status(409).json({
-        status: 'error',
-        message: 'User already exists',
-      });
-      return;
-    }
-
-    const encryptedPassword = encrypt(Password);
-    const now = new Date();
-
-    const user = await User.create({
-      FirstName: encrypt(FirstName),
-      EmailID: encryptedEmail,
-      Password: encryptedPassword,
-      CreatedBy: FirstName,
-      LastModifiedBy: FirstName,
+    const existingUser = await UserDecrypt.findOne({ 
+      EmailID: EncryptedEmail, 
+      Password_Hash: EncryptedPassword 
     });
 
-    const subscription = await Subscription.findOne({ IsDefault: true });
-    if (!subscription) {
-      res.status(500).json({
+  
+    if (!existingUser) {
+      return res.status(404).json({
         status: 'error',
-        message: 'Default subscription not found',
+        message: 'Invalid email or password. Please try again.',
       });
-      return;
     }
 
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + subscription.Duration);
+    const FinalUser = await Users.findOne({ _id:  existingUser.User_id });
+    const token = await generateToken(FinalUser);
 
-    const userSubscription = new UserSubscription({
-      UserID: user._id,
-      SubscriptionID: subscription._id,
-      StartDate: startDate,
-      EndDate: endDate,
-      ExhaustDate: null,
-      ActualEndDate: null,
-      PaymentAmount: 0,
-      PaymentDuration: subscription.Duration,
-      PaymentCurrency: 'USD',
-      Status: 1,
-      TransactionID: 'null',
-      PaymentGatewayData: 'null',
-      CreatedOn: now,
-      CreatedBy: FirstName,
-      LastModifiedOn: now,
-      LastModifiedBy: now,
-    });
-    await userSubscription.save();
-
+    
+     // Capture login info
     const agent = useragent.parse(req.headers['user-agent'] || '');
     const OS = agent.os.toString();
     const Browser = agent.toAgent();
 
-    await UserLogin.create({
-      UserID: user._id,
+    const UserLoginStatus = await UserLogin.create({
+      UserID: FinalUser._id,
       DateTime: now,
       OS,
       Browser,
     });
 
-    const token = await generateToken(user._id as string);
+    const UserSubscriptionDetail = await UserSubscription.findOne({ UserID: FinalUser._id, Status: 1 });
+    const subscription = await Subscription.findOne({ _id: UserSubscriptionDetail.SubscriptionID });
 
+    if (!subscription) {
+      return res.status(500).json({
+        status: 'error',
+        message: 'Default subscription not found',
+      });
+      
+    }
+
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + subscription.Duration);
+
+  
     res.status(200).json({
-      ID: user._id,
-      FirstName,
-      EmailID,
-      LoginToken: token,
+      ID: FinalUser._id,
+      FirstName:FinalUser.FirstName,
+      LastName: FinalUser.LastName,
+      EmailID: FinalUser.EmailID,
+      ContactNumber : FinalUser.ContactNumber, 
+      BirthDate : FinalUser.ContactNumber,
+      Grade : FinalUser.ContactNumber,
       SubscriptionDetails: {
-        SubscriptionID: subscription._id,
-        StartDate: startDate.toISOString().split('T')[0],
-        EndDate: endDate.toISOString().split('T')[0],
-        ExhaustDate: null,
-        ActualEndDate: null,
-        PaymentAmount: 0,
-        PaymentDuration: subscription.Duration,
-        PaymentCurrency: 'USD',
+        "SubscriptionID": subscription._id,
+        "StartDate": startDate.toISOString().split('T')[0],
+        "EndDate": endDate.toISOString().split('T')[0],
+        "ExhaustDate": null,
+        "ActualEndDate": null,
+        "PaymentAmount": 0,
+        "PaymentDuration": subscription.Duration,
+        "PaymentCurrency": 'USD',
       },
       UserSubscriptionDetails: {
-        id: userSubscription._id,
-        SubscriptionID: userSubscription.SubscriptionID,
-        StartDate: startDate.toISOString().split('T')[0],
-        EndDate: endDate.toISOString().split('T')[0],
-        ExhaustDate: null,
-        ActualEndDate: null,
-        PaymentAmount: userSubscription.PaymentAmount,
-        PaymentDuration: userSubscription.PaymentDuration,
-        PaymentCurrency: userSubscription.PaymentCurrency,
+        "ID": subscription._id,
+        "SubscriptionTitle": subscription.SubscriptionTitle,
+        "IsFree":subscription.IsFree,
+        "Price": subscription.Price,
+        "Duration": subscription.Duration,
+        "NumOfDocuments": subscription.NumOfDocuments,
+        "NoOfPages": subscription.NoOfPages,
+        "NumOfQuiz": subscription.NumOfQuiz,
+        "AllowedFormats": subscription.AllowedFormats,
+        "NumberOfQuest": subscription.NumberOfQuest,
+        "DifficultyLevels": subscription.DifficultyLevels,
+        "IsActive": subscription.IsActive,
+        "IsDefault": subscription.IsDefault
       },
+      "DocumentDetails": {
+        "ID": "string",
+        "UserID": "string",
+        "SubscriptionID": "string",
+        "DocumentName": "string",
+        "DocumentUploadDateTime": "2019-08-24T14:15:22.123Z",
+        "Status": 0
+      },
+      "QuizDetails": {
+          "ID": "string",
+          "DocumentID": "string",
+          "QuizJSON": "string",
+          "QuizResponseJSON": "string",
+          "Score": 0,
+          "Status": 0,
+          "Priority": 0
+      },
+      LoginToken: token,
     });
   } catch (error) {
     console.error('Signup error:', error);
