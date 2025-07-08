@@ -1,10 +1,11 @@
 import express from 'express';
-import { registerUser } from '../controllers/UserSignUp.controller';
-import { plan_list } from '../controllers/plan.controller';
 
+import { plan_list } from '../controllers/plan.controller';
 import { userValidationSchema } from '../validations/userValidation';
 import { validateRequest } from '../middlewares/validateRequest';
 // import { token_verification } from '../middlewares/tokenVerification';
+import { registerUser } from '../controllers/userAuth.controller';
+
 const router = express.Router();
 
 router.post('/auth/sign-up',validateRequest(userValidationSchema), registerUser);

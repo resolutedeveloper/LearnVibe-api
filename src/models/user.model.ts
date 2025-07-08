@@ -21,7 +21,6 @@ const UserSchema: Schema<IUser> = new Schema(
       type: String,
       required: true,
       default: uuidv4,
-      unique: true,
     },
     FirstName: {
       type: String,
@@ -29,7 +28,7 @@ const UserSchema: Schema<IUser> = new Schema(
     },
     LastName: {
       type: String,
-      required: true,
+      default: null,
     },
     EmailID: {
       type: String,
@@ -41,12 +40,15 @@ const UserSchema: Schema<IUser> = new Schema(
     },
     ContactNumber: {
       type: String,
+      default: null,
     },
     Birthdate: {
       type: String,
+      default: null,
     },
     Grade: {
       type: String,
+      default: null,
     },
     CreatedBy: {
       type: String,
