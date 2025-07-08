@@ -10,55 +10,78 @@ import { UserSubscription } from '../models/userSubscription.model';
 const now = new Date();
 
 export const plan_list = async (req: Request, res: Response) => {
-  try {
-    // Fetch only active subscriptions and select specific fields
-    const subscriptions = await Subscription.find(
-      { IsActive: true },{
-        ID: 1,
-        SubscriptionTitle: 1,
-        Duration: 1,
-        NumOfDocuments: 1,
-        NoOfPages: 1,
-        NumOfQuiz: 1,
-        AllowedFormats: 1,
-        NumberOfQuest: 1,
-        DifficultyLevels: 1,
-        IsActive: 1,
-        IsDefault: 1
-      }
-    ).sort({ CreatedOn: -1 });
-
-    if (!subscriptions.length) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'No subscription plans found.'
-      });
+ try {
+  const subscriptions = await Subscription.find(
+    { IsActive: true },
+    {
+      SubscriptionTitle: 1,
+      IsFree: 1,
+      Price: 1,
+      Duration: 1,
+      NumOfDocuments: 1,
+      NoOfPages: 1,
+      NumOfQuiz: 1,
+      AllowedFormats: 1,
+      NumberOfQuest: 1,
+      DifficultyLevels: 1,
+      IsActive: 1,
+      IsDefault: 1,
+      CreatedOn: 1
     }
+  )
+    .sort({ CreatedOn: -1 })
+    .lean();
 
-    return res.status(200).json({
-      status: 'success',
-      message: 'Active subscription plans retrieved successfully.',
-      data: subscriptions
-    });
-
-  } catch (error) {
-    console.error('❌ Error fetching subscriptions:', error);
-    return res.status(500).json({
+  if (!subscriptions.length) {
+    return res.status(404).json({
       status: 'error',
-      message: 'Internal server error.',
-      error: error instanceof Error ? error.message : String(error)
+      message: 'Active subscription plans not found.'
     });
   }
+
+  // Format: Add ID and remove _id
+  const formattedSubscriptions = subscriptions.map(sub => {
+    const { _id, ...rest } = sub;
+    return {
+      ID: _id,      // Add ID field (first key)
+      ...rest       // Spread the rest of the fields without _id
+    };
+  });
+
+  return res.status(200).json({
+    status: 'success',
+    message: 'Active subscription plans retrieved successfully.',
+    data: formattedSubscriptions
+  });
+
+} catch (error) {
+  console.error('❌ Error fetching subscriptions:', error);
+  return res.status(500).json({
+    status: 'error',
+    message: 'Internal server error.',
+    error: error instanceof Error ? error.message : String(error)
+  });
+}
+
 };
 
 
 export const sign_in = async (req: Request, res: Response) => {
 try {
-
     const EncryptedEmail = decrypt(req.body.EmailID);
     const EncryptedPassword = decrypt(req.body.Password);
-    console.log(EncryptedEmail + " " + EncryptedPassword);
+    const EmailExistCheck = await UserDecrypt.findOne({ 
+      EmailID: EncryptedEmail, 
+    });
+
   
+    if (!EmailExistCheck) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'EmailID does not exist.',
+      });
+    }
+
     const existingUser = await UserDecrypt.findOne({ 
       EmailID: EncryptedEmail, 
       Password_Hash: EncryptedPassword 
@@ -68,13 +91,18 @@ try {
     if (!existingUser) {
       return res.status(404).json({
         status: 'error',
-        message: 'Invalid email or password. Please try again.',
+        message: 'Invalid password. Please try again.',
       });
     }
-
-    const FinalUser = await Users.findOne({ _id:  existingUser.User_id });
+  
+    const FinalUser = await Users.findOne({ _id: existingUser.User_id });
+    if (!FinalUser) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not fount.',
+      });
+    }
     const token = await generateToken(FinalUser);
-
     
      // Capture login info
     const agent = useragent.parse(req.headers['user-agent'] || '');
@@ -89,12 +117,18 @@ try {
     });
 
     const UserSubscriptionDetail = await UserSubscription.findOne({ UserID: FinalUser._id, Status: 1 });
-    const subscription = await Subscription.findOne({ _id: UserSubscriptionDetail.SubscriptionID });
+    if (!UserSubscriptionDetail) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No active subscription plan found for the user.',
+      });
+    }
 
+    const subscription = await Subscription.findOne({ _id: UserSubscriptionDetail.SubscriptionID });
     if (!subscription) {
       return res.status(500).json({
         status: 'error',
-        message: 'Default subscription not found',
+        message: 'Subscription plan does not found.',
       });
       
     }
@@ -107,9 +141,9 @@ try {
   
     res.status(200).json({
       ID: FinalUser._id,
-      FirstName:FinalUser.FirstName,
+      FirstName: decrypt(FinalUser.FirstName),
       LastName: FinalUser.LastName,
-      EmailID: FinalUser.EmailID,
+      EmailID: decrypt(FinalUser.EmailID),
       ContactNumber : FinalUser.ContactNumber, 
       BirthDate : FinalUser.ContactNumber,
       Grade : FinalUser.ContactNumber,
