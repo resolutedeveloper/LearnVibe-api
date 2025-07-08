@@ -4,7 +4,7 @@ import { plan_list } from '../controllers/plan.controller';
 
 import { userValidationSchema } from '../validations/userValidation';
 import { validateRequest } from '../middlewares/validateRequest';
-
+// import { token_verification } from '../middlewares/tokenVerification';
 const router = express.Router();
 
 router.post('/auth/sign-up',validateRequest(userValidationSchema), registerUser);
