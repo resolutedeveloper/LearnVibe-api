@@ -21,7 +21,6 @@ const UserSchema: Schema<IUser> = new Schema(
       type: String,
       required: true,
       default: uuidv4,
-      unique: true,
     },
     FirstName: {
       type: String,
