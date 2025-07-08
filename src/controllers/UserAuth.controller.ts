@@ -7,32 +7,38 @@ import UserDecrypt from '../models/userDecrypt.model';
 import { Subscription } from '../models/subscription.model';
 import { UserSubscription } from '../models/userSubscription.model';
 import UserLogin from '../models/userLogin.model';
+import UserDocument from '../models/userDocument.model';
+import QuizModel from '../models/quiz.model';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    // Decrypt incoming fields
+    // Step 1: Decrypt incoming data
     const decryptedFirstName = decrypt(req.body.FirstName);
     const decryptedEmailID = decrypt(req.body.EmailID);
     const decryptedPassword = decrypt(req.body.Password);
 
-    // Re-encrypt for secure storage in main user table
+    // Step 2: Encrypt for storage
     const doubleEncryptedFirstName = encrypt(req.body.FirstName);
     const doubleEncryptedEmail = encrypt(req.body.EmailID);
     const doubleEncryptedPassword = encrypt(req.body.Password);
 
-    // Check for existing user in UserDecrypt
+    // Step 3: Check for existing user
     const existingUser = await UserDecrypt.findOne({ EmailID: decryptedEmailID });
     if (existingUser) {
-      res.status(409).json({
-        status: 'error',
-        message: 'User already exists',
-      });
+      res.status(409).json({ status: 'error', message: 'User already exists' });
+      return;
+    }
+
+    // Step 4: Get default subscription
+    const subscription = await Subscription.findOne({ IsDefault: true });
+    if (!subscription) {
+      res.status(500).json({ status: 'error', message: 'Default subscription not found' });
       return;
     }
 
     const now = new Date();
 
-    // Create user with encrypted data
+    // Step 5: Create user in main table
     const user = await User.create({
       FirstName: doubleEncryptedFirstName,
       EmailID: doubleEncryptedEmail,
@@ -41,7 +47,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       LastModifiedBy: decryptedFirstName,
     });
 
-    // Store decrypted info in UserDecrypt
+    // Step 6: Store decrypted info
     await UserDecrypt.create({
       User_id: user._id.toString(),
       EmailID: decryptedEmailID,
@@ -50,21 +56,12 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       LastModifiedBy: decryptedFirstName,
     });
 
-    // Fetch default subscription
-    const subscription = await Subscription.findOne({ IsDefault: true });
-    if (!subscription) {
-      res.status(500).json({
-        status: 'error',
-        message: 'Default subscription not found',
-      });
-      return;
-    }
-
+    // Step 7: Calculate dates
     const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + subscription.Duration);
 
-    // Create user subscription
+    // Step 8: Create user subscription
     const userSubscription = await UserSubscription.create({
       UserID: user._id,
       SubscriptionID: subscription._id,
@@ -84,7 +81,16 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       LastModifiedBy: decryptedFirstName,
     });
 
-    // Capture login info
+    // Step 9: Fetch associated document (if any)
+    const document = await UserDocument.findOne({ SubscriptionID: subscription._id });
+
+    // Step 10: Fetch associated quiz (if document exists)
+    let quiz = null;
+    if (document) {
+      quiz = await QuizModel.findOne({ DocumentID: document._id });
+    }
+
+    // Step 11: Record login info
     const agent = useragent.parse(req.headers['user-agent'] || '');
     const OS = agent.os.toString();
     const Browser = agent.toAgent();
@@ -96,10 +102,10 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       Browser,
     });
 
-    // Generate token
+    // Step 12: Generate JWT token
     const token = await generateToken(user._id.toString());
 
-    // Send success response
+    // Step 13: Send response
     res.status(200).json({
       ID: user._id,
       FirstName: decryptedFirstName,
@@ -130,7 +136,49 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         PaymentDuration: userSubscription.PaymentDuration,
         PaymentCurrency: userSubscription.PaymentCurrency,
       },
+      DocumentDetails: document
+        ? {
+            ID: document._id,
+            UserID: document.UserID,
+            SubscriptionID: document.SubscriptionID,
+            DocumentName: document.DocumentName,
+            DocumentUploadDateTime: document.DocumentUploadDateTime,
+            Status: document.Status,
+          }
+        : null,
+      QuizDetails: quiz
+        ? {
+            ID: quiz._id,
+            DocumentID: quiz.DocumentID,
+            QuizJSON: quiz.QuizJSON,
+            QuizResponseJSON: quiz.QuizResponseJSON,
+            Score: quiz.Score,
+            Status: quiz.Status,
+            Priority: quiz.Priority,
+          }
+        : null,
     });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal Server Error',
+    });
+  }
+};
+
+export const sendOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal Server Error',
+    });
+  }
+};
+export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({

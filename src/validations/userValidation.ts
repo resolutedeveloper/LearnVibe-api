@@ -9,7 +9,7 @@ export const userValidationSchema = Joi.object({
 export const userUpdateValidationSchema = Joi.object({
   UserID: Joi.string().required(),
   FirstName: Joi.string().required(),
-  EmailID: Joi.string().email().required(),
+  EmailID: Joi.string().required(),
   LastName: Joi.string().optional().allow('', null),
   ContactNumber: Joi.string().optional().allow('', null),
   BirthDate: Joi.string().optional().allow('', null),
