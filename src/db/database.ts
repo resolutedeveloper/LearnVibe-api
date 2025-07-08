@@ -1,19 +1,19 @@
-import { MongoClient, Db } from 'mongodb';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const url = process.env.MONGO_URI!;
-const dbName = process.env.DB_NAME!;
+const MONGO_URI = process.env.MONGO_URI!;
+const DB_NAME = process.env.DB_NAME!;
 
-let db: Db;
-
-export const connectDB = async (): Promise<Db> => {
-  if (!db) {
-    const client = new MongoClient(url);
-    await client.connect();
-    db = client.db(dbName);
-    console.log(`✅ MongoDB Connected: ${db.databaseName}`);
+export const connectDB = async () => {
+  try {
+    await mongoose.connect(MONGO_URI, {
+      dbName: DB_NAME,
+    });
+    console.log(`✅ MongoDB connected to ${DB_NAME}`);
+  } catch (err) {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
   }
-  return db;
 };
