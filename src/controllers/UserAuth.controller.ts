@@ -9,43 +9,37 @@ import UserLogin from '../models/userLogin.model';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    // 1. Decrypt incoming fields
     const FirstName = decrypt(req.body.FirstName);
     const EmailID = decrypt(req.body.EmailID);
     const Password = decrypt(req.body.Password);
     const encryptedEmail = encrypt(EmailID);
 
-    // 2. Check if user already exists
     const existingUser = await User.findOne({ EmailID: encryptedEmail });
     if (existingUser) {
-      res.status(409).json({ message: 'User already exists' });
+      res.status(409).json({
+        status: 'error',
+        message: 'User already exists',
+      });
       return;
     }
 
-    // 3. Encrypt password
     const encryptedPassword = encrypt(Password);
     const now = new Date();
 
-    // 4. Create and save the new User
-    const user = new User({
+    const user = await User.create({
       FirstName: encrypt(FirstName),
       EmailID: encryptedEmail,
       Password: encryptedPassword,
-      LastName: null,
-      ContactNumber: null,
-      BirthDate: null,
-      Grade: null,
-      CreatedOn: now,
-      LastModifiedOn: now,
       CreatedBy: FirstName,
       LastModifiedBy: FirstName,
     });
-    await user.save();
 
-    // 6. Get Default Subscription
     const subscription = await Subscription.findOne({ IsDefault: true });
     if (!subscription) {
-      res.status(500).json({ message: 'Default subscription not found' });
+      res.status(500).json({
+        status: 'error',
+        message: 'Default subscription not found',
+      });
       return;
     }
 
@@ -53,7 +47,6 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + subscription.Duration);
 
-    // 7. Insert into UserSubscription
     const userSubscription = new UserSubscription({
       UserID: user._id,
       SubscriptionID: subscription._id,
@@ -65,8 +58,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       PaymentDuration: subscription.Duration,
       PaymentCurrency: 'USD',
       Status: 1,
-      TransactionID: 'TransactionID',
-      PaymentGatewayData: 'PaymentGatewayData',
+      TransactionID: 'null',
+      PaymentGatewayData: 'null',
       CreatedOn: now,
       CreatedBy: FirstName,
       LastModifiedOn: now,
@@ -74,7 +67,6 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     });
     await userSubscription.save();
 
-    // 11. Insert login log
     const agent = useragent.parse(req.headers['user-agent'] || '');
     const OS = agent.os.toString();
     const Browser = agent.toAgent();
@@ -86,10 +78,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       Browser,
     });
 
-    // 12. Generate token
     const token = await generateToken(user._id as string);
 
-    // 13. Respond
     res.status(200).json({
       ID: user._id,
       FirstName,
@@ -105,9 +95,23 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
         PaymentDuration: subscription.Duration,
         PaymentCurrency: 'USD',
       },
+      UserSubscriptionDetails: {
+        id: userSubscription._id,
+        SubscriptionID: userSubscription.SubscriptionID,
+        StartDate: startDate.toISOString().split('T')[0],
+        EndDate: endDate.toISOString().split('T')[0],
+        ExhaustDate: null,
+        ActualEndDate: null,
+        PaymentAmount: userSubscription.PaymentAmount,
+        PaymentDuration: userSubscription.PaymentDuration,
+        PaymentCurrency: userSubscription.PaymentCurrency,
+      },
     });
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal Server Error',
+    });
   }
 };
