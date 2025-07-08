@@ -14,21 +14,14 @@ export const tokenVerification = async (req: AuthenticatedRequest, res: Response
       res.status(401).json({ status: 'fail', message: 'Authorization token is required' });
       return;
     }
-
     const token = authHeader.split(' ')[1];
-
-    // ⛔ No verification — just decode the payload
     let decoded = jwt.decode(token) as JwtPayload;
     
-    
-
-
-    if (!decoded?._id) {
+    if (!decoded?. _id) {
       res.status(401).json({ status: 'fail', message: 'Invalid token payload.' });
       return;
     }
-    const user = await User.findOne({ CreatedBy: decoded._id });
-
+    const user = await User.findOne({ _id: decoded._id });
 
     if (!user) {
       res.status(401).json({ status: 'fail', message: 'Invalid token or user not found.' });
