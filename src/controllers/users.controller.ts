@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/user.model';
+import UserDecrypt from '../models/userDecrypt.model';
 import { decrypt, encrypt } from '../utils/encrypt';
 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
@@ -17,11 +18,12 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     const birthDate = req.body.BirthDate ?? null;
     const grade = req.body.Grade ?? null;
 
-    // Step 4: Build update object
+    // Step 4: Build update object for main User table
     const updateData: any = {
-      FirstName: encrypt(decryptedFirstName),
-      EmailID: encrypt(decryptedEmailID),
+      FirstName: encrypt(req.body.FirstName),
+      EmailID: encrypt(req.body.EmailID),
       LastModifiedOn: new Date(),
+      LastModifiedBy: decryptedFirstName,
     };
 
     if (lastName !== null) updateData.LastName = lastName;
@@ -29,7 +31,7 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     if (birthDate !== null) updateData.Birthdate = birthDate;
     if (grade !== null) updateData.Grade = grade;
 
-    // Step 5: Update user in DB
+    // Step 5: Update main User table
     const updatedUser = await User.findByIdAndUpdate(userID, updateData, { new: true });
 
     if (!updatedUser) {
@@ -40,13 +42,23 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Step 6: Send decrypted fields in response
+    // Step 6: Update UserDecrypt EmailID
+    await UserDecrypt.findOneAndUpdate(
+      { User_id: userID },
+      {
+        EmailID: decryptedEmailID,
+        LastModifiedBy: decryptedFirstName,
+        LastModifiedOn: new Date(),
+      }
+    );
+
+    // Step 7: Send decrypted fields in response
     res.status(200).json({
       status: 'success',
       UserID: updatedUser._id,
-      FirstName: decrypt(updatedUser.FirstName),
+      FirstName: decryptedFirstName,
       LastName: updatedUser.LastName || '',
-      EmailID: decrypt(updatedUser.EmailID),
+      EmailID: decryptedEmailID,
       ContactNumber: updatedUser.ContactNumber || '',
       BirthDate: updatedUser.Birthdate || '',
       Grade: updatedUser.Grade || '',
