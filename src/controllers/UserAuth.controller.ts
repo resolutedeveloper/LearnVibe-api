@@ -3,18 +3,25 @@ import { Request, Response } from 'express';
 import { decrypt, encrypt } from '../utils/encrypt';
 import { generateToken } from '../utils/jwt';
 import User from '../models/user.model';
+import UserDecrypt from '../models/userDecrypt.model';
 import { Subscription } from '../models/subscription.model';
 import { UserSubscription } from '../models/userSubscription.model';
 import UserLogin from '../models/userLogin.model';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const FirstName = decrypt(req.body.FirstName);
-    const EmailID = decrypt(req.body.EmailID);
-    const Password = decrypt(req.body.Password);
-    const encryptedEmail = encrypt(EmailID);
+    // Decrypt incoming fields
+    const decryptedFirstName = decrypt(req.body.FirstName);
+    const decryptedEmailID = decrypt(req.body.EmailID);
+    const decryptedPassword = decrypt(req.body.Password);
 
-    const existingUser = await User.findOne({ EmailID: encryptedEmail });
+    // Re-encrypt for secure storage in main user table
+    const doubleEncryptedFirstName = encrypt(req.body.FirstName);
+    const doubleEncryptedEmail = encrypt(req.body.EmailID);
+    const doubleEncryptedPassword = encrypt(req.body.Password);
+
+    // Check for existing user in UserDecrypt
+    const existingUser = await UserDecrypt.findOne({ EmailID: decryptedEmailID });
     if (existingUser) {
       res.status(409).json({
         status: 'error',
@@ -23,17 +30,27 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const encryptedPassword = encrypt(Password);
     const now = new Date();
 
+    // Create user with encrypted data
     const user = await User.create({
-      FirstName: encrypt(FirstName),
-      EmailID: encryptedEmail,
-      Password: encryptedPassword,
-      CreatedBy: FirstName,
-      LastModifiedBy: FirstName,
+      FirstName: doubleEncryptedFirstName,
+      EmailID: doubleEncryptedEmail,
+      Password: doubleEncryptedPassword,
+      CreatedBy: decryptedFirstName,
+      LastModifiedBy: decryptedFirstName,
     });
 
+    // Store decrypted info in UserDecrypt
+    await UserDecrypt.create({
+      User_id: user._id.toString(),
+      EmailID: decryptedEmailID,
+      Password_Hash: decryptedPassword,
+      CreatedBy: decryptedFirstName,
+      LastModifiedBy: decryptedFirstName,
+    });
+
+    // Fetch default subscription
     const subscription = await Subscription.findOne({ IsDefault: true });
     if (!subscription) {
       res.status(500).json({
@@ -47,7 +64,8 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + subscription.Duration);
 
-    const userSubscription = new UserSubscription({
+    // Create user subscription
+    const userSubscription = await UserSubscription.create({
       UserID: user._id,
       SubscriptionID: subscription._id,
       StartDate: startDate,
@@ -61,12 +79,12 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       TransactionID: 'null',
       PaymentGatewayData: 'null',
       CreatedOn: now,
-      CreatedBy: FirstName,
+      CreatedBy: decryptedFirstName,
       LastModifiedOn: now,
-      LastModifiedBy: now,
+      LastModifiedBy: decryptedFirstName,
     });
-    await userSubscription.save();
 
+    // Capture login info
     const agent = useragent.parse(req.headers['user-agent'] || '');
     const OS = agent.os.toString();
     const Browser = agent.toAgent();
@@ -78,13 +96,19 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
       Browser,
     });
 
-    const token = await generateToken(user._id as string);
+    // Generate token
+    const token = await generateToken(user._id.toString());
 
+    // Send success response
     res.status(200).json({
       ID: user._id,
-      FirstName,
-      EmailID,
+      FirstName: decryptedFirstName,
+      EmailID: decryptedEmailID,
       LoginToken: token,
+      CreatedOn: now,
+      CreatedBy: decryptedFirstName,
+      LastModifiedOn: now,
+      LastModifiedBy: decryptedFirstName,
       SubscriptionDetails: {
         SubscriptionID: subscription._id,
         StartDate: startDate.toISOString().split('T')[0],
