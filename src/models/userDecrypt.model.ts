@@ -1,48 +1,29 @@
 import mongoose, { Schema, Document } from 'mongoose';
-export interface IUser extends Document {
+
+export interface IUserDecrypt extends Document {
   ID: string;
-  FirstName: string;
-  LastName: string;
+  User_id: string;
   EmailID: string;
-  Password: string;
-  ContactNumber?: string;
-  Birthdate?: string;
-  Grade?: string;
+  Password_Hash: string;
   CreatedOn: string;
   CreatedBy: string;
   LastModifiedOn: string;
   LastModifiedBy: string;
 }
 
-const UserSchema: Schema<IUser> = new Schema(
+const UserDecryptSchema: Schema<IUserDecrypt> = new Schema(
   {
-    FirstName: {
+    User_id: {
       type: String,
       required: true,
-    },
-    LastName: {
-      type: String,
-      default: null,
     },
     EmailID: {
       type: String,
       required: true,
     },
-    Password: {
+    Password_Hash: {
       type: String,
       required: true,
-    },
-    ContactNumber: {
-      type: String,
-      default: null,
-    },
-    Birthdate: {
-      type: String,
-      default: null,
-    },
-    Grade: {
-      type: String,
-      default: null,
     },
     CreatedBy: {
       type: String,
@@ -58,4 +39,4 @@ const UserSchema: Schema<IUser> = new Schema(
   }
 );
 
-export default mongoose.model<IUser>('User', UserSchema);
+export default mongoose.model<IUserDecrypt>('UserDecrypt', UserDecryptSchema);
