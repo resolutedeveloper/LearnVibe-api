@@ -1,30 +1,35 @@
 import { Request, Response } from 'express';
-import { connectDB } from '../db/database';
 import { Subscription } from '../models/subscription.model';
-import { DataEncrypted } from '../utils/encrypt';
-
-// Call DB connection (optional if you already call it elsewhere in app.ts/server.ts)
-connectDB();
 
 export const plan_list = async (req: Request, res: Response) => {
   try {
-    // Fetch subscriptions from MongoDB
-    const subscriptions = await Subscription.find({ IsActive: true }).sort({ CreatedOn: -1 });
+    // Fetch only active subscriptions and select specific fields
+    const subscriptions = await Subscription.find(
+      { IsActive: true },{
+        ID: 1,
+        SubscriptionTitle: 1,
+        Duration: 1,
+        NumOfDocuments: 1,
+        NoOfPages: 1,
+        NumOfQuiz: 1,
+        AllowedFormats: 1,
+        NumberOfQuest: 1,
+        DifficultyLevels: 1,
+        IsActive: 1,
+        IsDefault: 1
+      }
+    ).sort({ CreatedOn: -1 });
 
-    // If no subscriptions found
-    if (!subscriptions || subscriptions.length === 0) {
+    if (!subscriptions.length) {
       return res.status(404).json({
         status: 'error',
         message: 'No subscription plans found.'
       });
     }
 
-    // Encrypt data
-   
-    // Success response
     return res.status(200).json({
       status: 'success',
-      message: 'Subscription plans retrieved successfully.',
+      message: 'Active subscription plans retrieved successfully.',
       data: subscriptions
     });
 
@@ -33,7 +38,7 @@ export const plan_list = async (req: Request, res: Response) => {
     return res.status(500).json({
       status: 'error',
       message: 'Internal server error.',
-      error: error instanceof Error ? error.message : error
+      error: error instanceof Error ? error.message : String(error)
     });
   }
 };
