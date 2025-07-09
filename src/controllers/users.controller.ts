@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/user.model';
 import UserDecrypt from '../models/userDecrypt.model';
-import { decrypt, encrypt } from '../utils/encrypt';
+import { decrypt, decryptFE, encrypt } from '../utils/encrypt';
 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -9,8 +9,8 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     const userID = req.body.UserID;
 
     // Step 2: Decrypt encrypted fields
-    const decryptedFirstName = decrypt(req.body.FirstName);
-    const decryptedEmailID = decrypt(req.body.EmailID);
+    const decryptedFirstName = decryptFE(req.body.FirstName);
+    const decryptedEmailID = decryptFE(req.body.EmailID);
 
     // Step 3: Use remaining fields as plain text
     const lastName = req.body.LastName ?? null;
