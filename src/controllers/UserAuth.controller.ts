@@ -241,12 +241,13 @@ try {
       Status: doc.Status
     }));
 
+  
     const documentIds = UserDoc.map(doc => doc._id);
-    const allUserQuizzes = await QuizModel.find({ DocumentID: { $in: documentIds } });
-    const formattedQuizzes = allUserQuizzes.map(({ _id, ...rest }) => ({
-      ID: _id,
-      ...rest
-    }));
+          const allUserQuizzes = await QuizModel.find({ DocumentID: { $in: documentIds } }).lean();
+          const formattedQuizzes = allUserQuizzes.map(({ _id, ...rest }) => ({
+            ID: _id,          // 👈 ID comes first
+            ...rest
+          }));
 
 
     const token = await generateToken(FinalUser);
@@ -287,41 +288,45 @@ try {
 
   
     res.status(200).json({
-      ID: FinalUser._id,
-      FirstName: decrypt(FinalUser.FirstName),
-      LastName: FinalUser.LastName,
-      EmailID: decrypt(FinalUser.EmailID),
-      ContactNumber : FinalUser.ContactNumber, 
-      BirthDate : FinalUser.ContactNumber,
-      Grade : FinalUser.ContactNumber,
-      SubscriptionDetails: {
-        "SubscriptionID": subscription._id,
-        "StartDate": startDate.toISOString().split('T')[0],
-        "EndDate": endDate.toISOString().split('T')[0],
-        "ExhaustDate": null,
-        "ActualEndDate": null,
-        "PaymentAmount": 0,
-        "PaymentDuration": subscription.Duration,
-        "PaymentCurrency": 'USD',
-      },
-      UserSubscriptionDetails: {
-        "ID": subscription._id,
-        "SubscriptionTitle": subscription.SubscriptionTitle,
-        "IsFree":subscription.IsFree,
-        "Price": subscription.Price,
-        "Duration": subscription.Duration,
-        "NumOfDocuments": subscription.NumOfDocuments,
-        "NoOfPages": subscription.NoOfPages,
-        "NumOfQuiz": subscription.NumOfQuiz,
-        "AllowedFormats": subscription.AllowedFormats,
-        "NumberOfQuest": subscription.NumberOfQuest,
-        "DifficultyLevels": subscription.DifficultyLevels,
-        "IsActive": subscription.IsActive,
-        "IsDefault": subscription.IsDefault
-      },
-      "DocumentDetails": UserDoc,
-      "QuizDetails": formattedQuizzes,
-      LoginToken: token,
+       status: 'success',
+          message: 'User signed in successfully.',
+          data: [{
+        ID: FinalUser._id,
+        FirstName: decrypt(FinalUser.FirstName),
+        LastName: FinalUser.LastName,
+        EmailID: decrypt(FinalUser.EmailID),
+        ContactNumber : FinalUser.ContactNumber, 
+        BirthDate : FinalUser.ContactNumber,
+        Grade : FinalUser.ContactNumber,
+        SubscriptionDetails: {
+          "SubscriptionID": subscription._id,
+          "StartDate": startDate.toISOString().split('T')[0],
+          "EndDate": endDate.toISOString().split('T')[0],
+          "ExhaustDate": null,
+          "ActualEndDate": null,
+          "PaymentAmount": 0,
+          "PaymentDuration": subscription.Duration,
+          "PaymentCurrency": 'USD',
+        },
+        UserSubscriptionDetails: {
+          "ID": subscription._id,
+          "SubscriptionTitle": subscription.SubscriptionTitle,
+          "IsFree":subscription.IsFree,
+          "Price": subscription.Price,
+          "Duration": subscription.Duration,
+          "NumOfDocuments": subscription.NumOfDocuments,
+          "NoOfPages": subscription.NoOfPages,
+          "NumOfQuiz": subscription.NumOfQuiz,
+          "AllowedFormats": subscription.AllowedFormats,
+          "NumberOfQuest": subscription.NumberOfQuest,
+          "DifficultyLevels": subscription.DifficultyLevels,
+          "IsActive": subscription.IsActive,
+          "IsDefault": subscription.IsDefault
+        },
+        "DocumentDetails": formattedDocs,
+        "QuizDetails": formattedQuizzes,
+        LoginToken: token
+    }]
     });
   } catch (error) {
     console.error('Signup error:', error);
