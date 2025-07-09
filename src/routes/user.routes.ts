@@ -13,7 +13,5 @@ const router = express.Router();
 router.post('/auth/sign-up', validateRequest(userValidationSchema), registerUser);
 router.post('/auth/update-profile', validateRequest(userUpdateValidationSchema), updateUser);
 router.get('/users/subscription-list', tokenVerification, plan_list); // ✅ match name: token_verification
-
-router.get('/users/subscription-list', tokenVerification, plan_list);  // ✅ match name: token_verification
 router.post('/auth/sign-in', sign_in);  // ✅ match name: token_verification
 export default router;
