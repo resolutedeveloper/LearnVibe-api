@@ -22,6 +22,7 @@
     "mongoose": "^8.16.2",
     "multer": "^2.0.1",
     "nodemailer": "^7.0.5",
+    "stripe": "^18.3.0",
     "useragent": "^2.3.0",
     "uuid": "^11.1.0"
   },
@@ -33,6 +34,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.0.10",
+    "@types/stripe": "^8.0.417",
     "@types/uuid": "^10.0.0",
     "husky": "^9.1.7",
     "prettier": "^3.6.2",

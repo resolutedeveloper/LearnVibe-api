@@ -1,9 +1,24 @@
 import { Request, Response } from 'express';
 import { Subscription } from '../models/subscription.model';
 import { UserSubscription } from '../models/userSubscription.model';
+import UserStripe from '../models/userStripe.model';
+
+
 
 import QuizModel from '../models/quiz.model';
 import UserDocumentModel from '../models/userDocument.model';
+import UserModel from '../models/user.model';
+import { decrypt, encrypt } from '../utils/encrypt';
+
+import dotenv from 'dotenv';
+dotenv.config();
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.Secret_key as string, {
+  apiVersion: '2024-04-10',  // Use the latest stable version
+});
+
+export default stripe;
 
 
 export const plan_list = async (req: Request, res: Response) => {
@@ -309,13 +324,189 @@ export const document_upload = async (req: Request, res: Response) => {
   }
 };
 
-export const subscribe = async (req: Request, res: Response) => {
-   
-  return res.json('assassa');
+export const payment_detail = async (req: Request, res: Response) => {
+
+     const { SubscriptionID, PaymentAmount, PaymentCurrency, PaymentDuration} = req.body;
+			  let amount = PaymentAmount;
+        const TokenUser = req.TokenUser._id;
+        const UserDetail = await UserModel.findOne({ _id: TokenUser});
+        //decrypt, encrypt
+        const DecryptEmail = decrypt(UserDetail.EmailID);
+        const FinalDecryptEmail =  decrypt(DecryptEmail);
+
+			// Collect Email And Password
+			let errors = [];
+			if (!FinalDecryptEmail.trim()) {
+				errors.push("Email is required.");
+			}
+
+			// Return errors if any
+			if (errors.length > 0) {
+				return res.status(401).json({
+					status: "error",
+					message: errors.join(" "), // Combine messages into one string
+				});
+			}
+
+      const CheckEmailDecrypt = await UserStripe.findOne({ EmailID: FinalDecryptEmail });
+
+			let CustRetrieve;
+			let session;
+      
+			if (CheckEmailDecrypt) {
+				// -------- if email id already exist then use this -------------
+				CustRetrieve = await stripe.customers.retrieve(
+					CheckEmailDecrypt.StripeCustomerID
+				);
+
+				if (amount != 0) {
+					// Not 0 payment
+					session = await stripe.checkout.sessions.create({
+						payment_method_types: ["card"],
+						line_items: [
+							{
+								price_data: {
+									currency: PaymentCurrency,
+									product_data: {
+										name: '1 Month',
+									},
+									unit_amount: Math.round(amount * 100),
+									recurring: {
+										interval: "month",
+									},
+								},
+								quantity: 1,
+							},
+						],
+						//mode: "payment",
+						mode: "subscription",
+						customer: CustRetrieve.id,
+						//customer_email: decryptEmail,
+						//   success_url: process.env.PaymentRedirect + '/success',
+						success_url:
+							process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
+						cancel_url:
+							process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
+					});
+				} else {
+					// 0 payment
+					
+					session = await stripe.checkout.sessions.create({
+						mode: "subscription",
+						payment_method_types: ["card"],
+						customer: CustRetrieve.id,
+						line_items: [
+							{
+								price_data: {
+									currency: "usd",
+									product_data: {
+										name: "Month",
+									},
+									unit_amount: Math.round(amount * 100),
+									recurring: {
+										interval: "month",
+									},
+								},
+								quantity: 1,
+							},
+						],
+						subscription_data: {
+							trial_period_days: 30, // ✅ allowed
+						},
+						success_url:
+							process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
+						cancel_url:
+							process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
+					});
+				}
+				// return res.json(session);
+			} else {
+				// --------- if email id not exist then use this -----------
+				const CustRet = await stripe.customers.create({
+					name: req.TokenUser.LastName,
+					email: FinalDecryptEmail,
+					description: `Learn Vibe!`,
+				});
+
+				// Create Stripe Customer In Our server
+				await UserStripe.create({
+					EmailID: FinalDecryptEmail,
+					UserID: req.TokenUser._id,
+					StripeCustomerID: CustRet.id,
+				});
+				CustRetrieve = CustRet;
+
+				// Not 0 payment
+				if (amount != 0) {
+					session = await stripe.checkout.sessions.create({
+						payment_method_types: ["card"],
+						line_items: [
+							{
+								price_data: {
+									currency: PaymentCurrency,
+									product_data: {
+										name: 'Learn Vibe',
+									},
+									unit_amount: Math.round(amount * 100),
+									recurring: {
+										interval: "month",
+									},
+								},
+								quantity: 1,
+							},
+						],
+						//mode: "payment",
+						mode: "subscription",
+						customer: CustRetrieve.id,
+						//customer_email: decryptEmail,
+						//   success_url: process.env.PaymentRedirect + '/success',
+						success_url:
+							process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
+						cancel_url:
+							process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
+					});
+				} else {
+					// 0 payment
+				
+					session = await stripe.checkout.sessions.create({
+						mode: "subscription",
+						payment_method_types: ["card"],
+						customer: CustRetrieve.id,
+						line_items: [
+							{
+								price_data: {
+									currency: "usd",
+									product_data: {
+										name: 'Learn Vibe',
+									},
+									unit_amount: Math.round(amount * 100),
+									recurring: {
+										interval: "month",
+									},
+								},
+								quantity: 1,
+							},
+						],
+						subscription_data: {
+							trial_period_days: 30, // ✅ allowed
+						},
+						success_url:
+							process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
+						cancel_url:
+							process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
+					});
+				}
+			}
+
+			// ✅ Finally return the session URL
+			return res.status(200).json({
+				status: "success",
+				url: session.url,
+			});
 };
 
-export const payment_detail = async (req: Request, res: Response) => {
-   
-  return res.json('assassa');
+export const subscribe = async (req: Request, res: Response) => {
+  
 };
+
 
