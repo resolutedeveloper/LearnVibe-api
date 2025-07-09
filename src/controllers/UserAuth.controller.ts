@@ -25,14 +25,14 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     // Step 3: Check for existing user
     const existingUser = await UserDecrypt.findOne({ EmailID: decryptedEmailID });
     if (existingUser) {
-      res.status(409).json({ status: 'error', message: 'User already exists' });
+      res.status(400).json({ status: 'error', message: 'User already exists' });
       return;
     }
 
     // Step 4: Get default subscription
     const subscription = await Subscription.findOne({ IsDefault: true });
     if (!subscription) {
-      res.status(500).json({ status: 'error', message: 'Default subscription not found' });
+      res.status(404).json({ status: 'error', message: 'Default subscription not found' });
       return;
     }
 
