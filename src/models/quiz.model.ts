@@ -7,6 +7,7 @@ export interface IQuiz extends Document {
   Score: number;
   Status: number;
   Priority: number;
+  QuizAnswerHistory: any[]; 
 }
 
 const QuizSchema: Schema = new Schema(
@@ -17,6 +18,7 @@ const QuizSchema: Schema = new Schema(
     Score: { type: Number, required: true },
     Status: { type: Number, required: true },
     Priority: { type: Number, default: 1 },
+    QuizAnswerHistory: { type: [Schema.Types.Mixed], required: true },
   },
   {
     timestamps: true,

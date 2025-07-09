@@ -4,7 +4,10 @@ import { decrypt, encrypt } from '../utils/encrypt';
 import  Users  from '../models/user.model';
 import  UserDecrypt  from '../models/userDecrypt.model';
 import { generateToken } from '../utils/jwt';
-import UserLogin from '../models/userLogin.model';
+import UserLog from '../models/userLogin.model';
+import QuizModel from '../models/quiz.model';
+import UserDocumentModel from '../models/userDocument.model';
+
 import useragent from 'useragent';
 import { UserSubscription } from '../models/userSubscription.model';
 const now = new Date();
@@ -102,6 +105,26 @@ try {
         message: 'User not fount.',
       });
     }
+
+    const UserDoc = await UserDocumentModel.find({ UserID: FinalUser._id});
+     const formattedDocs = UserDoc.map(doc => ({
+      ID: doc._id,  // Rename _id to ID
+      UserID: doc.UserID,
+      UsersSubscriptionID: doc.UsersSubscriptionID,
+      SubscriptionID: doc.SubscriptionID,
+      DocumentName: doc.DocumentName,
+      DocumentUploadDateTime: doc.DocumentUploadDateTime,
+      Status: doc.Status
+    }));
+
+    const documentIds = UserDoc.map(doc => doc._id);
+    const allUserQuizzes = await QuizModel.find({ DocumentID: { $in: documentIds } });
+    const formattedQuizzes = allUserQuizzes.map(({ _id, ...rest }) => ({
+      ID: _id,
+      ...rest
+    }));
+
+
     const token = await generateToken(FinalUser);
     
      // Capture login info
@@ -109,7 +132,7 @@ try {
     const OS = agent.os.toString();
     const Browser = agent.toAgent();
 
-    const UserLoginStatus = await UserLogin.create({
+    const UserLoginStatus = await UserLog.create({
       UserID: FinalUser._id,
       DateTime: now,
       OS,
@@ -172,23 +195,8 @@ try {
         "IsActive": subscription.IsActive,
         "IsDefault": subscription.IsDefault
       },
-      "DocumentDetails": {
-        "ID": "string",
-        "UserID": "string",
-        "SubscriptionID": "string",
-        "DocumentName": "string",
-        "DocumentUploadDateTime": "2019-08-24T14:15:22.123Z",
-        "Status": 0
-      },
-      "QuizDetails": {
-          "ID": "string",
-          "DocumentID": "string",
-          "QuizJSON": "string",
-          "QuizResponseJSON": "string",
-          "Score": 0,
-          "Status": 0,
-          "Priority": 0
-      },
+      "DocumentDetails": UserDoc,
+      "QuizDetails": formattedQuizzes,
       LoginToken: token,
     });
   } catch (error) {
