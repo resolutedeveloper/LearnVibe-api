@@ -4,7 +4,7 @@ import User from '../models/user.model';   // ✅ default import (no curly brace
 import mongoose from 'mongoose';
 
 interface AuthenticatedRequest extends Request {
-  requestor?: any;
+  TokenUser?: any;
 }
 
 export const tokenVerification = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -28,7 +28,7 @@ export const tokenVerification = async (req: AuthenticatedRequest, res: Response
       return;
     }
 
-    req.requestor = user;
+    req.TokenUser = user;
     next();
 
   } catch (error: any) {
