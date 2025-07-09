@@ -7,12 +7,12 @@ export interface IQuiz extends Document {
   Score: number;
   Status: number;
   Priority: number;
-  QuizAnswerHistory: any[]; 
+  QuizAnswerHistory: any[];
 }
 
 const QuizSchema: Schema = new Schema(
   {
-    DocumentID: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'UserDocument' },
+    DocumentID: { type: String, required: true, ref: 'UserDocument' },
     QuizJSON: { type: Schema.Types.Mixed, required: true },
     QuizResponseJSON: { type: Schema.Types.Mixed, default: {} },
     Score: { type: Number, required: true },

@@ -9,6 +9,7 @@ import { UserSubscription } from '../models/userSubscription.model';
 import UserLogin from '../models/userLogin.model';
 import UserDocument from '../models/userDocument.model';
 import QuizModel from '../models/quiz.model';
+import mongoose from 'mongoose';
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
