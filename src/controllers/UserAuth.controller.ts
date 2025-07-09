@@ -9,7 +9,11 @@ import { UserSubscription } from '../models/userSubscription.model';
 import UserLogin from '../models/userLogin.model';
 import UserDocument from '../models/userDocument.model';
 import QuizModel from '../models/quiz.model';
-import mongoose from 'mongoose';
+import Users from '../models/user.model';
+
+import UserLog from '../models/userLogin.model';
+import UserDocumentModel from '../models/userDocument.model';
+
 
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -180,6 +184,145 @@ export const sendOtp = async (req: Request, res: Response): Promise<void> => {
 };
 export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
   try {
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal Server Error',
+    });
+  }
+};
+
+
+export const sign_in = async (req: Request, res: Response) => {
+try {
+    const EncryptedEmail = decrypt(req.body.EmailID);
+    const EncryptedPassword = decrypt(req.body.Password);
+    const EmailExistCheck = await UserDecrypt.findOne({ 
+      EmailID: EncryptedEmail, 
+    });
+    const now = new Date();
+    if (!EmailExistCheck) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'EmailID does not exist.',
+      });
+    }
+
+    const existingUser = await UserDecrypt.findOne({ 
+      EmailID: EncryptedEmail, 
+      Password_Hash: EncryptedPassword 
+    });
+
+  
+    if (!existingUser) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Invalid password. Please try again.',
+      });
+    }
+  
+    const FinalUser = await Users.findOne({ _id: existingUser.User_id });
+    if (!FinalUser) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not fount.',
+      });
+    }
+
+    const UserDoc = await UserDocumentModel.find({ UserID: FinalUser._id});
+     const formattedDocs = UserDoc.map(doc => ({
+      ID: doc._id,  // Rename _id to ID
+      UserID: doc.UserID,
+      UsersSubscriptionID: doc.UsersSubscriptionID,
+      SubscriptionID: doc.SubscriptionID,
+      DocumentName: doc.DocumentName,
+      DocumentUploadDateTime: doc.DocumentUploadDateTime,
+      Status: doc.Status
+    }));
+
+    const documentIds = UserDoc.map(doc => doc._id);
+    const allUserQuizzes = await QuizModel.find({ DocumentID: { $in: documentIds } });
+    const formattedQuizzes = allUserQuizzes.map(({ _id, ...rest }) => ({
+      ID: _id,
+      ...rest
+    }));
+
+
+    const token = await generateToken(FinalUser);
+    
+     // Capture login info
+    const agent = useragent.parse(req.headers['user-agent'] || '');
+    const OS = agent.os.toString();
+    const Browser = agent.toAgent();
+
+    const UserLoginStatus = await UserLog.create({
+      UserID: FinalUser._id,
+      DateTime: now,
+      OS,
+      Browser,
+    });
+
+    const UserSubscriptionDetail = await UserSubscription.findOne({ UserID: FinalUser._id, Status: 1 });
+    if (!UserSubscriptionDetail) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No active subscription plan found for the user.',
+      });
+    }
+
+    const subscription = await Subscription.findOne({ _id: UserSubscriptionDetail.SubscriptionID });
+    if (!subscription) {
+      return res.status(500).json({
+        status: 'error',
+        message: 'Subscription plan does not found.',
+      });
+      
+    }
+
+
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + subscription.Duration);
+
+  
+    res.status(200).json({
+      ID: FinalUser._id,
+      FirstName: decrypt(FinalUser.FirstName),
+      LastName: FinalUser.LastName,
+      EmailID: decrypt(FinalUser.EmailID),
+      ContactNumber : FinalUser.ContactNumber, 
+      BirthDate : FinalUser.ContactNumber,
+      Grade : FinalUser.ContactNumber,
+      SubscriptionDetails: {
+        "SubscriptionID": subscription._id,
+        "StartDate": startDate.toISOString().split('T')[0],
+        "EndDate": endDate.toISOString().split('T')[0],
+        "ExhaustDate": null,
+        "ActualEndDate": null,
+        "PaymentAmount": 0,
+        "PaymentDuration": subscription.Duration,
+        "PaymentCurrency": 'USD',
+      },
+      UserSubscriptionDetails: {
+        "ID": subscription._id,
+        "SubscriptionTitle": subscription.SubscriptionTitle,
+        "IsFree":subscription.IsFree,
+        "Price": subscription.Price,
+        "Duration": subscription.Duration,
+        "NumOfDocuments": subscription.NumOfDocuments,
+        "NoOfPages": subscription.NoOfPages,
+        "NumOfQuiz": subscription.NumOfQuiz,
+        "AllowedFormats": subscription.AllowedFormats,
+        "NumberOfQuest": subscription.NumberOfQuest,
+        "DifficultyLevels": subscription.DifficultyLevels,
+        "IsActive": subscription.IsActive,
+        "IsDefault": subscription.IsDefault
+      },
+      "DocumentDetails": UserDoc,
+      "QuizDetails": formattedQuizzes,
+      LoginToken: token,
+    });
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({
