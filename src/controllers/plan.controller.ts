@@ -506,7 +506,7 @@ export const payment_detail = async (req: Request, res: Response) => {
 };
 
 export const subscribe = async (req: Request, res: Response) => {
-  
+  return res.json('assassa');
 };
 
 
