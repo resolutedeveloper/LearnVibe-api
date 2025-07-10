@@ -1,6 +1,7 @@
 import CryptoJS from 'crypto-js';
 
 const SECRET_KEY = process.env.Encrypted_S_Key || 'learnvibenet123';
+const SECRET_KEY_FE = process.env.Encrypted_S_Key || 'learnvibenet123';
 
 export const encrypt = (text: string): string => {
   return CryptoJS.AES.encrypt(text, SECRET_KEY).toString();
@@ -9,6 +10,15 @@ export const encrypt = (text: string): string => {
 export const decrypt = (text: string): string => {
   try {
     const bytes = CryptoJS.AES.decrypt(text, SECRET_KEY);
+    return bytes.toString(CryptoJS.enc.Utf8);
+  } catch (error) {
+    return '';
+  }
+};
+
+export const decryptFE = (text: string): string => {
+  try {
+    const bytes = CryptoJS.AES.decrypt(text, SECRET_KEY_FE);
     return bytes.toString(CryptoJS.enc.Utf8);
   } catch (error) {
     return '';

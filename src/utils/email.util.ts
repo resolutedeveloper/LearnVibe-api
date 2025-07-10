@@ -1,26 +1,19 @@
 import nodemailer from 'nodemailer';
+import { otpTemplate } from './otp.util';
+import EmailLog from '../models/emailLog.model';
+import { encrypt } from './encrypt';
+import dotenv from 'dotenv';
+dotenv.config();
 
 interface EmailOptions {
   to: string;
   otp: string;
 }
 
-const otpTemplate = (otp: string): string => {
-  return `
-    <div style="font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9;">
-      <h2 style="color: #333;">LearnVibe - Your OTP Code</h2>
-      <p style="font-size: 16px;">Use the code below to verify your email:</p>
-      <div style="font-size: 24px; font-weight: bold; margin: 20px 0; color: #2d89ef;">${otp}</div>
-      <p style="font-size: 14px; color: #555;">This OTP will expire in 5 minutes.</p>
-      <p style="font-size: 13px; color: #aaa;">LearnVibe Team</p>
-    </div>
-  `;
-};
-
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.zoho.in',
-  port: Number(process.env.EMAIL_PORT) || 465,
-  secure: process.env.EMAIL_SECURE === 'true',
+let transporter = nodemailer.createTransport({
+  host: 'smtp.zoho.com',
+  secure: true,
+  port: 465,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -39,6 +32,13 @@ export const sendOTPEmail = async ({ to, otp }: EmailOptions): Promise<void> => 
 
   try {
     const info = await transporter.sendMail(mailOptions);
+
+    await EmailLog.create({
+      EmailID: encrypt(to),
+      Subject: encrypt('LearnVibe - Email Verification OTP'),
+      Body: encrypt(html),
+    });
+
     console.log('✅ OTP email sent:', info.messageId);
   } catch (error) {
     console.error('❌ Error sending OTP email:', error);
