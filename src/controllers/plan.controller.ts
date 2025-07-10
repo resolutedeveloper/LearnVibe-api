@@ -77,7 +77,6 @@ export const plan_list = async (req: Request, res: Response) => {
 
 };
 
-
 export const get_active_documents = async (req: Request, res: Response) => {
       try {
         const TokenUser = req.TokenUser._id;
@@ -325,188 +324,331 @@ export const document_upload = async (req: Request, res: Response) => {
 };
 
 export const payment_detail = async (req: Request, res: Response) => {
+      const { SubscriptionID, PaymentAmount, PaymentCurrency, PaymentDuration} = req.body;
+      // Get Subscription Plan
+      const subscriptions = await Subscription.findOne({ IsActive: true, _id:SubscriptionID},{
+        SubscriptionTitle: 1,  IsFree: 1,  Price: 1,  Duration: 1,
+        NumOfDocuments: 1,  NoOfPages: 1,  NumOfQuiz: 1,  AllowedFormats: 1,
+        NumberOfQuest: 1,  DifficultyLevels: 1,  IsActive: 1,  IsDefault: 1,  CreatedOn: 1
+      }).sort({ CreatedOn: -1 }).lean();
 
-     const { SubscriptionID, PaymentAmount, PaymentCurrency, PaymentDuration} = req.body;
-			  let amount = PaymentAmount;
-        const TokenUser = req.TokenUser._id;
-        const UserDetail = await UserModel.findOne({ _id: TokenUser});
-        //decrypt, encrypt
-        const DecryptEmail = decrypt(UserDetail.EmailID);
-        const FinalDecryptEmail =  decrypt(DecryptEmail);
+      if (!subscriptions) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Active subscription plans not found.'
+        });
+      }
 
-			// Collect Email And Password
-			let errors = [];
-			if (!FinalDecryptEmail.trim()) {
-				errors.push("Email is required.");
-			}
+      //return res.json(subscriptions);
+      let amount = PaymentAmount;
+      const TokenUser = req.TokenUser._id;
+      const UserDetail = await UserModel.findOne({ _id: TokenUser});
+      //decrypt, encrypt
+      const DecryptEmail = decrypt(UserDetail.EmailID);
+      const FinalDecryptEmail =  decrypt(DecryptEmail);
 
-			// Return errors if any
-			if (errors.length > 0) {
-				return res.status(401).json({
-					status: "error",
-					message: errors.join(" "), // Combine messages into one string
-				});
-			}
+      // Collect Email And Password
+      let errors = [];
+      if (!FinalDecryptEmail.trim()) {
+        errors.push("Email is required.");
+      }
+
+      // Return errors if any
+      if (errors.length > 0) {
+        return res.status(401).json({
+          status: "error",
+          message: errors.join(" "), // Combine messages into one string
+        });
+      }
 
       const CheckEmailDecrypt = await UserStripe.findOne({ EmailID: FinalDecryptEmail });
 
-			let CustRetrieve;
-			let session;
-      
-			if (CheckEmailDecrypt) {
-				// -------- if email id already exist then use this -------------
-				CustRetrieve = await stripe.customers.retrieve(
-					CheckEmailDecrypt.StripeCustomerID
-				);
+      let CustRetrieve;
+      let session;
+    
+      if (CheckEmailDecrypt) {
+        // -------- if email id already exist then use this -------------
+        CustRetrieve = await stripe.customers.retrieve(
+          CheckEmailDecrypt.StripeCustomerID
+        );
 
-				if (amount != 0) {
-					// Not 0 payment
-					session = await stripe.checkout.sessions.create({
-						payment_method_types: ["card"],
-						line_items: [
-							{
-								price_data: {
-									currency: PaymentCurrency,
-									product_data: {
-										name: '1 Month',
-									},
-									unit_amount: Math.round(amount * 100),
-									recurring: {
-										interval: "month",
-									},
-								},
-								quantity: 1,
-							},
-						],
-						//mode: "payment",
-						mode: "subscription",
-						customer: CustRetrieve.id,
-						//customer_email: decryptEmail,
-						//   success_url: process.env.PaymentRedirect + '/success',
-						success_url:
-							process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
-						cancel_url:
-							process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
-					});
-				} else {
-					// 0 payment
-					
-					session = await stripe.checkout.sessions.create({
-						mode: "subscription",
-						payment_method_types: ["card"],
-						customer: CustRetrieve.id,
-						line_items: [
-							{
-								price_data: {
-									currency: "usd",
-									product_data: {
-										name: "Month",
-									},
-									unit_amount: Math.round(amount * 100),
-									recurring: {
-										interval: "month",
-									},
-								},
-								quantity: 1,
-							},
-						],
-						subscription_data: {
-							trial_period_days: 30, // ✅ allowed
-						},
-						success_url:
-							process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
-						cancel_url:
-							process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
-					});
-				}
-				// return res.json(session);
-			} else {
-				// --------- if email id not exist then use this -----------
-				const CustRet = await stripe.customers.create({
-					name: req.TokenUser.LastName,
-					email: FinalDecryptEmail,
-					description: `Learn Vibe!`,
-				});
+        if (amount != 0) {
+          // Not 0 payment
+          session = await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            line_items: [
+              {
+                price_data: {
+                  currency: PaymentCurrency,
+                  product_data: {
+                    name: subscriptions.SubscriptionTitle,
+                  },
+                  unit_amount: Math.round(amount * 100),
+                  recurring: {
+                    interval: "month",
+                  },
+                },
+                quantity: 1,
+              },
+            ],
+            //mode: "payment",
+            mode: "subscription",
+            customer: CustRetrieve.id,
+            //customer_email: decryptEmail,
+            //   success_url: process.env.PaymentRedirect + '/success',
+            success_url:
+              process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
+            cancel_url:
+              process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
+          });
+        } else {
+          // 0 payment
+          session = await stripe.checkout.sessions.create({
+            mode: "subscription",
+            payment_method_types: ["card"],
+            customer: CustRetrieve.id,
+            line_items: [
+              {
+                price_data: {
+                  currency: PaymentCurrency,
+                  product_data: {
+                    name: subscriptions.SubscriptionTitle,
+                  },
+                  unit_amount: Math.round(amount * 100),
+                  recurring: {
+                    interval: "month",
+                  },
+                },
+                quantity: 1,
+              },
+            ],
+            subscription_data: {
+              trial_period_days: 30, // ✅ allowed
+            },
+            success_url:
+              process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
+            cancel_url:
+              process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
+          });
+        }
+        // return res.json(session);
+      } else {
+        // --------- if email id not exist then use this -----------
+        const CustRet = await stripe.customers.create({
+          name: req.TokenUser.LastName,
+          email: FinalDecryptEmail,
+          description: subscriptions.DifficultyLevels,
+        });
 
-				// Create Stripe Customer In Our server
-				await UserStripe.create({
-					EmailID: FinalDecryptEmail,
-					UserID: req.TokenUser._id,
-					StripeCustomerID: CustRet.id,
-				});
-				CustRetrieve = CustRet;
+        // Create Stripe Customer In Our server
+        await UserStripe.create({
+          EmailID: FinalDecryptEmail,
+          UserID: req.TokenUser._id,
+          StripeCustomerID: CustRet.id,
+        });
+        CustRetrieve = CustRet;
 
-				// Not 0 payment
-				if (amount != 0) {
-					session = await stripe.checkout.sessions.create({
-						payment_method_types: ["card"],
-						line_items: [
-							{
-								price_data: {
-									currency: PaymentCurrency,
-									product_data: {
-										name: 'Learn Vibe',
-									},
-									unit_amount: Math.round(amount * 100),
-									recurring: {
-										interval: "month",
-									},
-								},
-								quantity: 1,
-							},
-						],
-						//mode: "payment",
-						mode: "subscription",
-						customer: CustRetrieve.id,
-						//customer_email: decryptEmail,
-						//   success_url: process.env.PaymentRedirect + '/success',
-						success_url:
-							process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
-						cancel_url:
-							process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
-					});
-				} else {
-					// 0 payment
-				
-					session = await stripe.checkout.sessions.create({
-						mode: "subscription",
-						payment_method_types: ["card"],
-						customer: CustRetrieve.id,
-						line_items: [
-							{
-								price_data: {
-									currency: "usd",
-									product_data: {
-										name: 'Learn Vibe',
-									},
-									unit_amount: Math.round(amount * 100),
-									recurring: {
-										interval: "month",
-									},
-								},
-								quantity: 1,
-							},
-						],
-						subscription_data: {
-							trial_period_days: 30, // ✅ allowed
-						},
-						success_url:
-							process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
-						cancel_url:
-							process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
-					});
-				}
-			}
-
-			// ✅ Finally return the session URL
-			return res.status(200).json({
-				status: "success",
-				url: session.url,
-			});
+        // Not 0 payment
+        if (amount != 0) {
+          session = await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            line_items: [
+              {
+                price_data: {
+                  currency: PaymentCurrency,
+                  product_data: {
+                    name: subscriptions.SubscriptionTitle,
+                  },
+                  unit_amount: Math.round(amount * 100),
+                  recurring: {
+                    interval: "month",
+                  },
+                },
+                quantity: 1,
+              },
+            ],
+            //mode: "payment",
+            mode: "subscription",
+            customer: CustRetrieve.id,
+            //customer_email: decryptEmail,
+            //   success_url: process.env.PaymentRedirect + '/success',
+            success_url:
+              process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
+            cancel_url:
+              process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
+          });
+        } else {
+          // 0 payment
+        
+          session = await stripe.checkout.sessions.create({
+            mode: "subscription",
+            payment_method_types: ["card"],
+            customer: CustRetrieve.id,
+            line_items: [
+              {
+                price_data: {
+                  currency: "usd",
+                  product_data: {
+                    name: subscriptions.SubscriptionTitle,
+                  },
+                  unit_amount: Math.round(amount * 100),
+                  recurring: {
+                    interval: "month",
+                  },
+                },
+                quantity: 1,
+              },
+            ],
+            subscription_data: {
+              trial_period_days: 30, // ✅ allowed
+            },
+            success_url:
+              process.env.PaymentRedirect + "/success/{CHECKOUT_SESSION_ID}",
+            cancel_url:
+              process.env.PaymentRedirect + "/cancel/{CHECKOUT_SESSION_ID}",
+          });
+        }
+      }
+      // ✅ Finally return the session URL
+      return res.status(200).json({
+        status: "success",
+        url: session.url,
+      });
 };
 
 export const subscribe = async (req: Request, res: Response) => {
-  return res.json('assassa');
+  try {
+    const { SubscriptionID, PaymentAmount, PaymentCurrency, PaymentDuration, StartDate, EndDate, TransactionID, PaymentGatewayData } = req.body;
+    
+    const subscriptions = await Subscription.findOne(
+    { IsActive: true, _id:SubscriptionID},{
+      SubscriptionTitle: 1,  IsFree: 1,  Price: 1,  Duration: 1,
+      NumOfDocuments: 1,  NoOfPages: 1,  NumOfQuiz: 1,  AllowedFormats: 1,
+      NumberOfQuest: 1,  DifficultyLevels: 1,  IsActive: 1,  IsDefault: 1,  CreatedOn: 1
+    }).sort({ CreatedOn: -1 }).lean();
+
+    if (!subscriptions) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Active subscription plans not found.'
+      });
+    }
+
+    const { _id, ...rest } = subscriptions;
+    const formattedSubscriptions = {
+      ID: _id,...rest 
+    };
+
+    const TokenUser = req.TokenUser._id;
+    const FirstName = decrypt(req.TokenUser.FirstName);
+    const FinalFirstName = decrypt(FirstName);
+    const currentDateTime = new Date();  // ✅ Current Date-Time
+
+    await UserSubscription.updateMany({
+        UserID: TokenUser,Status: 1,      
+      },{
+        $set: {
+          Status: 0,                               
+          LastModifiedOn: currentDateTime,
+          LastModifiedBy: FinalFirstName
+        }
+      }
+    );
+
+    const newSubscription = new UserSubscription({
+      UserID: TokenUser,
+      SubscriptionID: SubscriptionID,
+      StartDate: StartDate,
+      EndDate: EndDate,
+      ExhaustDate: '',
+      ActualEndDate: '',
+      PaymentAmount: PaymentAmount,
+      PaymentCurrency: PaymentCurrency,
+      CreatedOn: currentDateTime,              // ✅ Added here
+      CreatedBy: FinalFirstName,
+      LastModifiedOn: currentDateTime,          // ✅ Added here
+      LastModifiedBy: FinalFirstName,
+      PaymentDuration: PaymentDuration,
+      Status: 1,
+      TransactionID: TransactionID,
+      PaymentGatewayData: PaymentGatewayData
+    });
+
+    const savedSubscription = await newSubscription.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Subscription record created successfully.',
+      data: [{
+        UsersSubscriptionDetails:savedSubscription,
+        SubscriptionDetails: formattedSubscriptions
+      }]
+    });
+
+  } catch (error: any) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
 };
 
+export const quiz_pause_complete = async (req: Request, res: Response) => {
+  try {
+    const { QuizID, QuizResponseJSON, Status, StartTime, EndTime } = req.body;
+    if (!QuizID) {
+      return res.status(400).json({ status: 'error', message: 'QuizID is required' });
+    }
+    
+    if (!QuizID) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'QuizID is required'
+      });
+    }
 
+    // Prepare update object
+    let updateData = {
+      QuizResponseJSON: QuizResponseJSON,
+      Status: Status,
+      QuizAnswerHistory: [{"StartTime":StartTime,"EndTime":EndTime}],
+    };
+    // Conditionally add Score if Status == 1
+    if (Status == 1) {
+      updateData.Score = 900;
+    }
+
+    // Perform the update
+    const updatedQuiz = await QuizModel.findOneAndUpdate(
+      { _id: QuizID },
+      updateData,
+      { new: true, upsert: false }  // return updated document, don't insert new one
+    );
+
+    if (!updatedQuiz) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Quiz not found'
+      });
+    }
+
+    let QuzeMessage = 'Quiz updated successfully';  // Default message
+    if (Status == 1) {
+      QuzeMessage = 'Quiz completed successfully';
+    } else if (Status == 2) {
+      QuzeMessage = 'Quiz paused successfully';
+    } else if (Status == 0) {
+      QuzeMessage = 'Quiz pending successfully';
+    }
+    
+    return res.status(200).json({
+      status: 'success',
+      message: QuzeMessage,
+      data: updatedQuiz
+    });
+
+  } catch (error) {
+    console.error('Error updating quiz:', error);
+    res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+};

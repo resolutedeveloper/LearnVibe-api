@@ -17,7 +17,7 @@ export interface IUserSubscription extends Document {
   PaymentDuration: number; // Duration in months
   Status: number; // 0 = Expired, 1 = Active, 2 = Exhausted
   TransactionID: string; // Payment Transaction ID
-  PaymentGatewayData: string; // Additional data
+  PaymentGatewayData: any | null ; // Additional data
 }
 
 // 2. Mongoose Schema
@@ -37,7 +37,7 @@ const UserSubscriptionSchema: Schema = new Schema<IUserSubscription>({
   PaymentDuration: { type: Number, required: true },
   Status: { type: Number, required: true }, // 0 = Expired, 1 = Active, 2 = Exhausted
   TransactionID: { type: String, required: true },
-  PaymentGatewayData: { type: String, required: true },
+  PaymentGatewayData: { type: Schema.Types.Mixed, required: true },
 });
 
 // 3. Model Export
