@@ -2,9 +2,6 @@ import { Request, Response } from 'express';
 import { Subscription } from '../models/subscription.model';
 import { UserSubscription } from '../models/userSubscription.model';
 import UserStripe from '../models/userStripe.model';
-
-
-
 import QuizModel from '../models/quiz.model';
 import UserDocumentModel from '../models/userDocument.model';
 import UserModel from '../models/user.model';
@@ -19,37 +16,22 @@ const stripe = new Stripe(process.env.Secret_key as string, {
 });
 
 export default stripe;
-
-
 export const plan_list = async (req: Request, res: Response) => {
  try {
   const subscriptions = await Subscription.find(
-    { IsActive: true },
-    {
-      SubscriptionTitle: 1,
-      IsFree: 1,
-      Price: 1,
-      Duration: 1,
-      NumOfDocuments: 1,
-      NoOfPages: 1,
-      NumOfQuiz: 1,
-      AllowedFormats: 1,
-      NumberOfQuest: 1,
-      DifficultyLevels: 1,
-      IsActive: 1,
-      IsDefault: 1,
-      CreatedOn: 1
-    }
-  )
-    .sort({ CreatedOn: -1 })
-    .lean();
+    { IsActive: true },{
+      SubscriptionTitle: 1, IsFree: 1,Price: 1,
+      Duration: 1,NumOfDocuments: 1,NoOfPages: 1,
+      NumOfQuiz: 1, AllowedFormats: 1,NumberOfQuest: 1,
+      DifficultyLevels: 1, IsActive: 1,IsDefault: 1,CreatedOn: 1
+    }).sort({ CreatedOn: -1 }).lean();
 
-  if (!subscriptions.length) {
-    return res.status(404).json({
-      status: 'error',
-      message: 'Active subscription plans not found.'
-    });
-  }
+    if (!subscriptions.length) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Active subscription plans not found.'
+      });
+    }
 
   // Format: Add ID and remove _id
   const formattedSubscriptions = subscriptions.map(sub => {
@@ -584,7 +566,6 @@ export const subscribe = async (req: Request, res: Response) => {
         SubscriptionDetails: formattedSubscriptions
       }]
     });
-
   } catch (error: any) {
     res.status(500).json({
       status: 'error',
@@ -594,19 +575,8 @@ export const subscribe = async (req: Request, res: Response) => {
 };
 
 export const quiz_pause_complete = async (req: Request, res: Response) => {
-
-
-
-
-
-
-
-
-
-
-
-  
- 
+const encryptdaat = await EncryptBE('asdfg1234');
+//return res.json(encryptdaat);
 // const hashed = await createPasswordHash('123');
 // const isValid = await checkPasswordHash('123', '$2b$10$Z3nC.lUA9KYtgVj3z3bCIeSycYwqA7rKgiq.gTujFFUzhEyLsFWlu');
 // return res.json({ hashedPassword: isValid });

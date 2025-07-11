@@ -4,7 +4,6 @@ import CryptoJS from 'crypto-js';
 const crypto = require('crypto');
 import bcrypt from 'bcrypt';
 
-
 //Old
 const SECRET_KEY = process.env.Encrypted_S_Key || 'learnvibenet123';
 const SECRET_KEY_FE = process.env.Encrypted_S_Key || 'learnvibenet123';
@@ -40,8 +39,6 @@ export const comparePassword = (password: string, encryptedPassword: string): bo
     return false;
   }
 };
-
-
 
 //New encryption and decryption 
 const BE_SECRET_KEY = process.env.Enc_S_Key_BE || 'learnvibenet123';
