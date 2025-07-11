@@ -1,5 +1,5 @@
 import CryptoJS from 'crypto-js';
-
+const crypto = require('crypto');
 const SECRET_KEY = process.env.Encrypted_S_Key || 'learnvibenet123';
 const SECRET_KEY_FE = process.env.Encrypted_S_Key || 'learnvibenet123';
 
