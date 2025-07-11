@@ -1,50 +1,13 @@
 import dotenv from 'dotenv';
 dotenv.config();
-import CryptoJS from 'crypto-js';
 const crypto = require('crypto');
 import bcrypt from 'bcrypt';
 
-//Old
-const SECRET_KEY = process.env.Encrypted_S_Key || 'learnvibenet123';
-const SECRET_KEY_FE = process.env.Encrypted_S_Key || 'learnvibenet123';
-
-export const encrypt = (text: string): string => {
-  return CryptoJS.AES.encrypt(text, SECRET_KEY).toString();
-};
-
-export const decrypt = (text: string): string => {
-  try {
-    const bytes = CryptoJS.AES.decrypt(text, SECRET_KEY);
-    return bytes.toString(CryptoJS.enc.Utf8);
-  } catch (error) {
-    return '';
-  }
-};
-
-export const decryptFE = (text: string): string => {
-  try {
-    const bytes = CryptoJS.AES.decrypt(text, SECRET_KEY_FE);
-    return bytes.toString(CryptoJS.enc.Utf8);
-  } catch (error) {
-    return '';
-  }
-};
-
-export const comparePassword = (password: string, encryptedPassword: string): boolean => {
-  try {
-    const bytes = CryptoJS.AES.decrypt(encryptedPassword, SECRET_KEY);
-    const decryptedPassword = bytes.toString(CryptoJS.enc.Utf8);
-    return decryptedPassword === password;
-  } catch (error) {
-    return false;
-  }
-};
-
-//New encryption and decryption 
+//New encryption and decryption
 const BE_SECRET_KEY = process.env.Enc_S_Key_BE || 'learnvibenet123';
-const BE_SALT = process.env.Enc_S_Key_BE || 'learnvibenet123'; 
+const BE_SALT = process.env.Enc_S_Key_BE || 'learnvibenet123';
 const FE_SECRET_KEY = process.env.Enc_S_Key_FE || 'learnvibenet123';
-const FE_SALT = process.env.Enc_S_Key_FE || 'learnvibenet123'; 
+const FE_SALT = process.env.Enc_S_Key_FE || 'learnvibenet123';
 const PEPPER = process.env.PASSWORD_PEPPER || 'learnvibenet123';
 // BackEnd
 export const EncryptBE = (text: string): string => {
@@ -84,8 +47,7 @@ export const DecryptFE = (encryptedText: string): string => {
   return decrypted;
 };
 
-
-//Hash Password Bcrypt 
+//Hash Password Bcrypt
 //Use any Controller
 // const hashed = await createPasswordHash('123');
 // const isValid = await checkPasswordHash('123', '$2b$10$TqWJZoljp1Nq1nzgurOFVuvBcscpM2WXOAVQKLsWwU0Uors8h9fc6');
@@ -96,7 +58,10 @@ export const createPasswordHash = async (plainPassword: string): Promise<string>
   return hashedPassword;
 };
 
-export const checkPasswordHash = async (plainPassword: string, hashedPassword: string): Promise<boolean> => {
+export const checkPasswordHash = async (
+  plainPassword: string,
+  hashedPassword: string
+): Promise<boolean> => {
   const saltedPassword = plainPassword + PEPPER;
   const isMatch = await bcrypt.compare(saltedPassword, hashedPassword);
   return isMatch;

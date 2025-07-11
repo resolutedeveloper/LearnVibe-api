@@ -1,9 +1,8 @@
 import useragent from 'useragent';
 import { Request, Response } from 'express';
-import { decrypt, decryptFE, encrypt } from '../utils/encrypt';
+import { createPasswordHash, DecryptFE, EncryptBE, EncryptFE } from '../utils/encrypt';
 import { generateToken } from '../utils/jwt';
 import User from '../models/user.model';
-import UserDecrypt from '../models/userDecrypt.model';
 import { Subscription } from '../models/subscription.model';
 import { UserSubscription } from '../models/userSubscription.model';
 import QuizModel from '../models/quiz.model';
@@ -17,17 +16,18 @@ import { sendOTPEmail } from '../utils/email.util';
 export const registerUser = async (req: Request, res: Response): Promise<void> => {
   try {
     // Step 1: Decrypt incoming data
-    const decryptedFirstName = decryptFE(req.body.FirstName);
-    const decryptedEmailID = decryptFE(req.body.EmailID);
-    const decryptedPassword = decryptFE(req.body.Password);
+    const decryptedFirstName = DecryptFE(req.body.FirstName);
+    const decryptedEmailID = DecryptFE(req.body.EmailID);
 
     // Step 2: Encrypt for storage
-    const doubleEncryptedFirstName = encrypt(req.body.FirstName);
-    const doubleEncryptedEmail = encrypt(req.body.EmailID);
-    const doubleEncryptedPassword = encrypt(req.body.Password);
+    const doubleEncryptedFirstName = EncryptBE(req.body.FirstName);
+    const doubleEncryptedEmail = EncryptBE(req.body.EmailID);
+    const doubleEncryptedPassword = EncryptBE(req.body.Password);
+
+    const passwordHash = await createPasswordHash(doubleEncryptedPassword);
 
     // Step 3: Check for existing user
-    const existingUser = await UserDecrypt.findOne({ EmailID: decryptedEmailID });
+    const existingUser = await User.findOne({ EmailID: doubleEncryptedEmail });
     if (existingUser) {
       res.status(400).json({ status: 'error', message: 'User already exists' });
       return;
@@ -46,16 +46,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     const user = await User.create({
       FirstName: doubleEncryptedFirstName,
       EmailID: doubleEncryptedEmail,
-      Password: doubleEncryptedPassword,
-      CreatedBy: decryptedFirstName,
-      LastModifiedBy: decryptedFirstName,
-    });
-
-    // Step 6: Store decrypted info
-    await UserDecrypt.create({
-      User_id: user._id.toString(),
-      EmailID: decryptedEmailID,
-      Password_Hash: decryptedPassword,
+      Password: passwordHash,
       CreatedBy: decryptedFirstName,
       LastModifiedBy: decryptedFirstName,
     });
@@ -282,14 +273,12 @@ export const sign_in = async (req: Request, res: Response) => {
       Status: doc.Status,
     }));
 
-  
-    const documentIds = UserDoc.map(doc => doc._id);
-          const allUserQuizzes = await QuizModel.find({ DocumentID: { $in: documentIds } }).lean();
-          const formattedQuizzes = allUserQuizzes.map(({ _id, ...rest }) => ({
-            ID: _id,          // 👈 ID comes first
-            ...rest
-          }));
-
+    const documentIds = UserDoc.map((doc) => doc._id);
+    const allUserQuizzes = await QuizModel.find({ DocumentID: { $in: documentIds } }).lean();
+    const formattedQuizzes = allUserQuizzes.map(({ _id, ...rest }) => ({
+      ID: _id, // 👈 ID comes first
+      ...rest,
+    }));
 
     const token = await generateToken(FinalUser);
 
@@ -329,45 +318,47 @@ export const sign_in = async (req: Request, res: Response) => {
     endDate.setDate(endDate.getDate() + subscription.Duration);
 
     res.status(200).json({
-       status: 'success',
-          message: 'User signed in successfully.',
-          data: [{
-        ID: FinalUser._id,
-        FirstName: decrypt(FinalUser.FirstName),
-        LastName: FinalUser.LastName,
-        EmailID: decrypt(FinalUser.EmailID),
-        ContactNumber : FinalUser.ContactNumber, 
-        BirthDate : FinalUser.ContactNumber,
-        Grade : FinalUser.ContactNumber,
-        SubscriptionDetails: {
-          "SubscriptionID": subscription._id,
-          "StartDate": startDate.toISOString().split('T')[0],
-          "EndDate": endDate.toISOString().split('T')[0],
-          "ExhaustDate": null,
-          "ActualEndDate": null,
-          "PaymentAmount": 0,
-          "PaymentDuration": subscription.Duration,
-          "PaymentCurrency": 'USD',
+      status: 'success',
+      message: 'User signed in successfully.',
+      data: [
+        {
+          ID: FinalUser._id,
+          FirstName: decrypt(FinalUser.FirstName),
+          LastName: FinalUser.LastName,
+          EmailID: decrypt(FinalUser.EmailID),
+          ContactNumber: FinalUser.ContactNumber,
+          BirthDate: FinalUser.ContactNumber,
+          Grade: FinalUser.ContactNumber,
+          SubscriptionDetails: {
+            SubscriptionID: subscription._id,
+            StartDate: startDate.toISOString().split('T')[0],
+            EndDate: endDate.toISOString().split('T')[0],
+            ExhaustDate: null,
+            ActualEndDate: null,
+            PaymentAmount: 0,
+            PaymentDuration: subscription.Duration,
+            PaymentCurrency: 'USD',
+          },
+          UserSubscriptionDetails: {
+            ID: subscription._id,
+            SubscriptionTitle: subscription.SubscriptionTitle,
+            IsFree: subscription.IsFree,
+            Price: subscription.Price,
+            Duration: subscription.Duration,
+            NumOfDocuments: subscription.NumOfDocuments,
+            NoOfPages: subscription.NoOfPages,
+            NumOfQuiz: subscription.NumOfQuiz,
+            AllowedFormats: subscription.AllowedFormats,
+            NumberOfQuest: subscription.NumberOfQuest,
+            DifficultyLevels: subscription.DifficultyLevels,
+            IsActive: subscription.IsActive,
+            IsDefault: subscription.IsDefault,
+          },
+          DocumentDetails: formattedDocs,
+          QuizDetails: formattedQuizzes,
+          LoginToken: token,
         },
-        UserSubscriptionDetails: {
-          "ID": subscription._id,
-          "SubscriptionTitle": subscription.SubscriptionTitle,
-          "IsFree":subscription.IsFree,
-          "Price": subscription.Price,
-          "Duration": subscription.Duration,
-          "NumOfDocuments": subscription.NumOfDocuments,
-          "NoOfPages": subscription.NoOfPages,
-          "NumOfQuiz": subscription.NumOfQuiz,
-          "AllowedFormats": subscription.AllowedFormats,
-          "NumberOfQuest": subscription.NumberOfQuest,
-          "DifficultyLevels": subscription.DifficultyLevels,
-          "IsActive": subscription.IsActive,
-          "IsDefault": subscription.IsDefault
-        },
-        "DocumentDetails": formattedDocs,
-        "QuizDetails": formattedQuizzes,
-        LoginToken: token
-    }]
+      ],
     });
   } catch (error) {
     console.error('Signup error:', error);
