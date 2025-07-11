@@ -1,8 +1,8 @@
 import nodemailer from 'nodemailer';
 import { otpTemplate } from './otp.util';
 import EmailLog from '../models/emailLog.model';
-import { encrypt } from './encrypt';
 import dotenv from 'dotenv';
+import { EncryptBE } from './encrypt';
 dotenv.config();
 
 interface EmailOptions {
@@ -34,9 +34,9 @@ export const sendOTPEmail = async ({ to, otp }: EmailOptions): Promise<void> => 
     const info = await transporter.sendMail(mailOptions);
 
     await EmailLog.create({
-      EmailID: encrypt(to),
-      Subject: encrypt('LearnVibe - Email Verification OTP'),
-      Body: encrypt(html),
+      EmailID: EncryptBE(to),
+      Subject: EncryptBE('LearnVibe - Email Verification OTP'),
+      Body: EncryptBE(html),
     });
 
     console.log('✅ OTP email sent:', info.messageId);

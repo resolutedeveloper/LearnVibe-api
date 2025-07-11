@@ -1,16 +1,14 @@
 import { Request, Response } from 'express';
 import User from '../models/user.model';
-import UserDecrypt from '../models/userDecrypt.model';
-import { decrypt, decryptFE, encrypt } from '../utils/encrypt';
+import { DecryptFE, EncryptBE } from '../utils/encrypt';
 
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
     // Step 1: Use UserID directly (not encrypted)
     const userID = req.body.UserID;
 
-    // Step 2: Decrypt encrypted fields
-    const decryptedFirstName = decryptFE(req.body.FirstName);
-    const decryptedEmailID = decryptFE(req.body.EmailID);
+    const decryptedFirstName = DecryptFE(req.body.FirstName);
+    const decryptedEmailID = DecryptFE(req.body.EmailID);
 
     // Step 3: Use remaining fields as plain text
     const lastName = req.body.LastName ?? null;
@@ -20,10 +18,10 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
 
     // Step 4: Build update object for main User table
     const updateData: any = {
-      FirstName: encrypt(req.body.FirstName),
-      EmailID: encrypt(req.body.EmailID),
+      FirstName: EncryptBE(req.body.FirstName),
+      EmailID: EncryptBE(req.body.EmailID),
       LastModifiedOn: new Date(),
-      LastModifiedBy: decryptedFirstName,
+      LastModifiedBy: DecryptFE(req.body.FirstName),
     };
 
     if (lastName !== null) updateData.LastName = lastName;
@@ -41,16 +39,6 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       });
       return;
     }
-
-    // Step 6: Update UserDecrypt EmailID
-    await UserDecrypt.findOneAndUpdate(
-      { User_id: userID },
-      {
-        EmailID: decryptedEmailID,
-        LastModifiedBy: decryptedFirstName,
-        LastModifiedOn: new Date(),
-      }
-    );
 
     // Step 7: Send decrypted fields in response
     res.status(200).json({

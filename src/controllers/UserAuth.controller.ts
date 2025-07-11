@@ -1,6 +1,6 @@
 import useragent from 'useragent';
 import { Request, Response } from 'express';
-import { createPasswordHash, DecryptFE, EncryptBE, EncryptFE } from '../utils/encrypt';
+import { createPasswordHash, DecryptFE, EncryptBE } from '../utils/encrypt';
 import { generateToken } from '../utils/jwt';
 import User from '../models/user.model';
 import { Subscription } from '../models/subscription.model';
@@ -171,18 +171,18 @@ export const sendOtp = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const decryptedEmail = decryptFE(EMailID);
-    const doubleEncryptedEmail = encrypt(EMailID);
+    const decryptedEmail = DecryptFE(EMailID);
+    const doubleEncryptedEmail = EncryptBE(EMailID);
 
     if (Status === 0) {
-      const existingUser = await UserDecrypt.findOne({ EmailID: decryptedEmail });
+      const existingUser = await Users.findOne({ EmailID: doubleEncryptedEmail });
 
       if (existingUser) {
         res.status(400).json({ message: 'Email-ID already exists' });
         return;
       }
     } else if (Status === 1) {
-      const user = await UserDecrypt.findOne({ EmailID: decryptedEmail });
+      const user = await Users.findOne({ EmailID: doubleEncryptedEmail });
       if (!user) {
         res.status(404).json({ message: 'E-Mail ID is not valid' });
         return;
@@ -198,8 +198,8 @@ export const sendOtp = async (req: Request, res: Response): Promise<void> => {
     const expiration = new Date(now.getTime() + 5 * 60 * 1000);
 
     await Otp.create({
-      EmailID: decryptedEmail,
-      OTP: encrypt(otp),
+      EmailID: doubleEncryptedEmail,
+      OTP: EncryptBE(otp),
       Status: 0,
       Timestamp: now,
       ExpirationTimestamp: expiration,
