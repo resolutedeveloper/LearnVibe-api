@@ -9,7 +9,7 @@ import QuizModel from '../models/quiz.model';
 import UserDocumentModel from '../models/userDocument.model';
 import UserModel from '../models/user.model';
 import { decrypt, encrypt } from '../utils/encrypt';
-
+import { EncryptBE, DecryptBE, EncryptFE, DecryptFE, createPasswordHash, checkPasswordHash} from '../utils/encrypt';
 import dotenv from 'dotenv';
 dotenv.config();
 import Stripe from 'stripe';
@@ -594,6 +594,22 @@ export const subscribe = async (req: Request, res: Response) => {
 };
 
 export const quiz_pause_complete = async (req: Request, res: Response) => {
+
+
+
+
+
+
+
+
+
+
+
+  
+ 
+// const hashed = await createPasswordHash('123');
+// const isValid = await checkPasswordHash('123', '$2b$10$Z3nC.lUA9KYtgVj3z3bCIeSycYwqA7rKgiq.gTujFFUzhEyLsFWlu');
+// return res.json({ hashedPassword: isValid });
   try {
     const { QuizID, QuizResponseJSON, Status, StartTime, EndTime } = req.body;
     if (!QuizID) {
@@ -640,11 +656,22 @@ export const quiz_pause_complete = async (req: Request, res: Response) => {
     } else if (Status == 0) {
       QuzeMessage = 'Quiz pending successfully';
     }
+
+    const formattedData: QuizData = {
+        ID: updatedQuiz._id,
+        DocumentID: updatedQuiz.DocumentID,
+        QuizJSON: updatedQuiz.QuizJSON,
+        QuizResponseJSON: updatedQuiz.QuizResponseJSON,
+        Score: updatedQuiz.Score,
+        Status: updatedQuiz.Status,
+        Priority: updatedQuiz.Priority,
+        QuizAnswerHistory: updatedQuiz.QuizAnswerHistory,
+    };
     
     return res.status(200).json({
       status: 'success',
       message: QuzeMessage,
-      data: updatedQuiz
+      data: formattedData
     });
 
   } catch (error) {
