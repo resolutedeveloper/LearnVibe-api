@@ -1,6 +1,6 @@
 import useragent from 'useragent';
 import { Request, Response } from 'express';
-import { createPasswordHash, DecryptFE, EncryptBE, EncryptFE } from '../utils/encrypt';
+import { createPasswordHash, DecryptFE, DecryptBE, EncryptBE, EncryptFE, checkPasswordHash} from '../utils/encrypt';
 import { generateToken } from '../utils/jwt';
 import User from '../models/user.model';
 import { Subscription } from '../models/subscription.model';
@@ -229,11 +229,14 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
 
 export const sign_in = async (req: Request, res: Response) => {
   try {
-    const EncryptedEmail = decrypt(req.body.EmailID);
-    const EncryptedPassword = decrypt(req.body.Password);
-    const EmailExistCheck = await UserDecrypt.findOne({
+    const EncryptedEmail = EncryptBE(req.body.EmailID);
+    const EncryptedPassword = EncryptBE(req.body.Password);
+
+    const EmailExistCheck = await Users.findOne({
       EmailID: EncryptedEmail,
     });
+
+
     const now = new Date();
     if (!EmailExistCheck) {
       return res.status(404).json({
@@ -241,20 +244,20 @@ export const sign_in = async (req: Request, res: Response) => {
         message: 'EmailID does not exist.',
       });
     }
-
-    const existingUser = await UserDecrypt.findOne({
-      EmailID: EncryptedEmail,
-      Password_Hash: EncryptedPassword,
-    });
-
-    if (!existingUser) {
+    const isValid = await checkPasswordHash(EncryptedPassword, EmailExistCheck.Password);
+    // return res.json(isValid);
+    // const existingUser = await UserDecrypt.findOne({
+    //   EmailID: EncryptedEmail,
+    //   Password_Hash: EncryptedPassword,
+    // });
+    if (isValid == false) {
       return res.status(404).json({
         status: 'error',
         message: 'Invalid password. Please try again.',
       });
     }
 
-    const FinalUser = await Users.findOne({ _id: existingUser.User_id });
+    const FinalUser = await Users.findOne({ EmailID: EncryptedEmail });
     if (!FinalUser) {
       return res.status(404).json({
         status: 'error',
@@ -323,9 +326,9 @@ export const sign_in = async (req: Request, res: Response) => {
       data: [
         {
           ID: FinalUser._id,
-          FirstName: decrypt(FinalUser.FirstName),
+          FirstName: DecryptBE(FinalUser.FirstName),
           LastName: FinalUser.LastName,
-          EmailID: decrypt(FinalUser.EmailID),
+          EmailID: DecryptBE(FinalUser.EmailID),
           ContactNumber: FinalUser.ContactNumber,
           BirthDate: FinalUser.ContactNumber,
           Grade: FinalUser.ContactNumber,

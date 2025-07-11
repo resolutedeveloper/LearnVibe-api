@@ -575,8 +575,6 @@ export const subscribe = async (req: Request, res: Response) => {
 };
 
 export const quiz_pause_complete = async (req: Request, res: Response) => {
-const encryptdaat = await EncryptBE('asdfg1234');
-//return res.json(encryptdaat);
 // const hashed = await createPasswordHash('123');
 // const isValid = await checkPasswordHash('123', '$2b$10$Z3nC.lUA9KYtgVj3z3bCIeSycYwqA7rKgiq.gTujFFUzhEyLsFWlu');
 // return res.json({ hashedPassword: isValid });
