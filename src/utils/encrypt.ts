@@ -9,6 +9,7 @@ const BE_SALT = process.env.Enc_S_Key_BE || 'learnvibenet123';
 const FE_SECRET_KEY = process.env.Enc_S_Key_FE || 'learnvibenet123';
 const FE_SALT = process.env.Enc_S_Key_FE || 'learnvibenet123';
 const PEPPER = process.env.PASSWORD_PEPPER || 'learnvibenet123';
+
 // BackEnd
 export const EncryptBE = (text: string): string => {
   const derivedKey = crypto.scryptSync(BE_SECRET_KEY, BE_SALT, 24);

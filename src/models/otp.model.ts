@@ -21,7 +21,7 @@ const OTPSchema: Schema = new Schema({
   },
   Status: {
     type: Number,
-    enum: [-1, 0, 1],
+    enum: [0, 1, 2, 3],
     default: 0,
   },
   Timestamp: {

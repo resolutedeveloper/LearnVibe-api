@@ -6,12 +6,13 @@ import { tokenVerification } from '../middlewares/tokenVerification'; // ✅ mat
 
 import { registerUser, sendOtp, sign_in, verifyOtp } from '../controllers/userAuth.controller';
 import { updateUser } from '../controllers/users.controller';
+import { verifyOtpValidationSchema } from '../validations/otpValidations';
 
 const router = express.Router();
 
 router.post('/sign-up', validateRequest(userValidationSchema), registerUser);
 router.post('/update-profile', validateRequest(userUpdateValidationSchema), updateUser);
 router.post('/send-otp', sendOtp);
-router.post('/verify-otp', verifyOtp);
+router.post('/verify-otp', validateRequest(verifyOtpValidationSchema), verifyOtp);
 router.post('/sign-in', sign_in); // ✅ match name: token_verification
 export default router;
