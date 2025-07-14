@@ -22,7 +22,7 @@ const stripe = new Stripe(process.env.Secret_key as string, {
 });
 
 export default stripe;
-export const plan_list = async (req: Request, res: Response): Promise<void> => {
+export const plan_list = async (req: Request, res: Response): Promise<Response> => {
   try {
     const subscriptions = await Subscription.find(
       { IsActive: true },
@@ -76,9 +76,9 @@ export const plan_list = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const get_active_documents = async (req: Request, res: Response): Promise<void> => {
+export const get_active_documents = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const TokenUser = req.TokenUser._id;
+    const TokenUser = req.TokenUser!._id;
 
     const UserSub = await UserSubscription.findOne({ UserID: TokenUser, Status: 1 });
     if (!UserSub) {
@@ -174,7 +174,7 @@ export const get_active_documents = async (req: Request, res: Response): Promise
   // });
 };
 
-export const document_upload = async (req: Request, res: Response): Promise<void> => {
+export const document_upload = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { SubscriptionID, DocumentName } = req.body;
 
@@ -190,7 +190,7 @@ export const document_upload = async (req: Request, res: Response): Promise<void
       });
     }
 
-    const TokenUser = req.TokenUser._id;
+    const TokenUser = req.TokenUser!._id;
     const UserSub = await UserSubscription.findOne({ UserID: TokenUser, Status: 1 });
     // ✅ Step 2: Save to database
     const newDocument = new UserDocumentModel({
@@ -316,7 +316,7 @@ export const document_upload = async (req: Request, res: Response): Promise<void
   }
 };
 
-export const payment_detail = async (req: Request, res: Response): Promise<void> => {
+export const payment_detail = async (req: Request, res: Response): Promise<Response> => {
   const { SubscriptionID, PaymentAmount, PaymentCurrency, PaymentDuration } = req.body;
   // Get Subscription Plan
   const subscriptions = await Subscription.findOne(
@@ -349,7 +349,7 @@ export const payment_detail = async (req: Request, res: Response): Promise<void>
 
   //return res.json(subscriptions);
   let amount = PaymentAmount;
-  const TokenUser = req.TokenUser._id;
+  const TokenUser = req.TokenUser!._id;
   const UserDetail = await UserModel.findOne({ _id: TokenUser });
   //decrypt, encrypt
   const DecryptEmail = DecryptBE(UserDetail.EmailID);
@@ -437,7 +437,7 @@ export const payment_detail = async (req: Request, res: Response): Promise<void>
   } else {
     // --------- if email id not exist then use this -----------
     const CustRet = await stripe.customers.create({
-      name: req.TokenUser.LastName,
+      name: req.TokenUser!.LastName,
       email: FinalDecryptEmail,
       description: subscriptions.DifficultyLevels,
     });
@@ -445,7 +445,7 @@ export const payment_detail = async (req: Request, res: Response): Promise<void>
     // Create Stripe Customer In Our server
     await UserStripe.create({
       EmailID: FinalDecryptEmail,
-      UserID: req.TokenUser._id,
+      UserID: req.TokenUser!._id,
       StripeCustomerID: CustRet.id,
     });
     CustRetrieve = CustRet;
@@ -514,7 +514,7 @@ export const payment_detail = async (req: Request, res: Response): Promise<void>
   });
 };
 
-export const subscribe = async (req: Request, res: Response): Promise<void> => {
+export const subscribe = async (req: Request, res: Response): Promise<Response> => {
   try {
     const {
       SubscriptionID,
@@ -561,8 +561,8 @@ export const subscribe = async (req: Request, res: Response): Promise<void> => {
       ...rest,
     };
 
-    const TokenUser = req.TokenUser._id;
-    const FirstName = DecryptBE(req.TokenUser.FirstName);
+    const TokenUser = req.TokenUser!._id;
+    const FirstName = DecryptBE(req.TokenUser!.FirstName);
     const FinalFirstName = DecryptFE(FirstName);
     const currentDateTime = new Date(); // ✅ Current Date-Time
 
@@ -619,7 +619,7 @@ export const subscribe = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const quiz_pause_complete = async (req: Request, res: Response): Promise<void> => {
+export const quiz_pause_complete = async (req: Request, res: Response): Promise<Response> => {
   // const hashed = await createPasswordHash('123');
   // const isValid = await checkPasswordHash('123', '$2b$10$Z3nC.lUA9KYtgVj3z3bCIeSycYwqA7rKgiq.gTujFFUzhEyLsFWlu');
   // return res.json({ hashedPassword: isValid });

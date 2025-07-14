@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/user.model';
 import { DecryptFE, EncryptBE } from '../utils/encrypt';
 
-export const updateUser = async (req: Request, res: Response): Promise<void> => {
+export const updateUser = async (req: Request, res: Response): Promise<Response> => {
   try {
     // Step 1: Use UserID directly (not encrypted)
     const userID = req.body.UserID;
@@ -33,11 +33,10 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
     const updatedUser = await User.findByIdAndUpdate(userID, updateData, { new: true });
 
     if (!updatedUser) {
-      res.status(404).json({
+      return res.status(404).json({
         status: 'error',
         message: 'User not found',
       });
-      return;
     }
 
     // Step 7: Send decrypted fields in response

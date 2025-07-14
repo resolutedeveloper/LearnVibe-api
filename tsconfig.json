@@ -10,7 +10,7 @@
     "skipLibCheck": true,                    // Skip type checking for node_modules
     "resolveJsonModule": true,               // Allow importing JSON files
     "types": ["node"],                       // Enable Node.js type definitions
-    "typeRoots": ["./node_modules/@types", "./types"] // For custom types like req.TokenUser
+    "typeRoots": ["./node_modules/@types", "./types"] // For custom types like req.TokenUser!
   },
   "include": ["src/**/*", "types/**/*"],     // Include src and custom types
   "exclude": ["node_modules", "dist"]        // Exclude compiled and dependencies

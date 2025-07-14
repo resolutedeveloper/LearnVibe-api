@@ -16,8 +16,8 @@ app.post('/encrypt', (req: Request, res: Response): void => {
   const { text, mode } = req.body;
 
   if (typeof text !== 'string') {
-    res.status(400).json({ error: 'Invalid or missing "text" field' });
-    return;
+    return res.status(400).json({ error: 'Invalid or missing "text" field' });
+    
   }
 
   try {
@@ -27,11 +27,11 @@ app.post('/encrypt', (req: Request, res: Response): void => {
     } else {
       encrypted = EncryptBE(text);
     }
-    res.status(200).json({ encrypted });
-    return;
+    return res.status(200).json({ encrypted });
+    
   } catch (err) {
-    res.status(500).json({ error: 'Encryption failed', details: (err as Error).message });
-    return;
+    return res.status(500).json({ error: 'Encryption failed', details: (err as Error).message });
+    
   }
 });
 
@@ -40,8 +40,8 @@ app.post('/decrypt', (req: Request, res: Response): void => {
   const { encryptedText, mode } = req.body;
 
   if (typeof encryptedText !== 'string') {
-    res.status(400).json({ error: 'Invalid or missing "encryptedText" field' });
-    return;
+    return res.status(400).json({ error: 'Invalid or missing "encryptedText" field' });
+    
   }
 
   try {
@@ -51,11 +51,11 @@ app.post('/decrypt', (req: Request, res: Response): void => {
     } else {
       decrypted = DecryptBE(encryptedText);
     }
-    res.status(200).json({ decrypted });
-    return;
+    return res.status(200).json({ decrypted });
+    
   } catch (err) {
-    res.status(500).json({ error: 'Decryption failed', details: (err as Error).message });
-    return;
+    return res.status(500).json({ error: 'Decryption failed', details: (err as Error).message });
+    
   }
 });
 

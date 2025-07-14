@@ -167,7 +167,7 @@ const createUserAndSubscription = async (
   };
 };
 
-export const registerUser = async (req: Request, res: Response): Promise<void> => {
+export const registerUser = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { FirstName, EmailID, Password } = req.body;
 
@@ -179,8 +179,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     );
 
     if ((result as any).status === 'error') {
-      res.status(409).json(result);
-      return;
+      return res.status(409).json(result);
     }
 
     res.status(200).json(result);
@@ -193,12 +192,11 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
   }
 };
 
-export const sendOtp = async (req: Request, res: Response): Promise<void> => {
+export const sendOtp = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { EMailID, Status } = req.body;
     if (!EMailID || typeof Status !== 'number') {
-      res.status(400).json({ status: 'error', message: 'Missing required fields.' });
-      return;
+      return res.status(400).json({ status: 'error', message: 'Missing required fields.' });
     }
 
     const decryptedEmail = DecryptFE(EMailID);
@@ -208,18 +206,18 @@ export const sendOtp = async (req: Request, res: Response): Promise<void> => {
       const existingUser = await Users.findOne({ EmailID: doubleEncryptedEmail });
 
       if (existingUser) {
-        res.status(400).json({ status: 'error', message: 'Email-ID already exists' });
-        return;
+        return res.status(400).json({ status: 'error', message: 'Email-ID already exists' });
+       
       }
     } else if (Status === 1) {
       const user = await Users.findOne({ EmailID: doubleEncryptedEmail });
       if (!user) {
-        res.status(404).json({ status: 'error', message: 'E-Mail ID is not valid' });
-        return;
+        return res.status(404).json({ status: 'error', message: 'E-Mail ID is not valid' });
+   
       }
     } else {
-      res.status(400).json({ status: 'error', message: 'Invalid status' });
-      return;
+      return res.status(400).json({ status: 'error', message: 'Invalid status' });
+  
     }
 
     const otp = await generateOtp();
@@ -246,13 +244,13 @@ export const sendOtp = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
+export const verifyOtp = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { EmailID, OTP: OTP_FE, FirstName, Password, Status } = req.body;
 
     if (!EmailID || !OTP_FE || typeof Status === 'undefined') {
-      res.status(400).json({ status: 'error', message: 'Missing required fields' });
-      return;
+      return res.status(400).json({ status: 'error', message: 'Missing required fields' });
+
     }
 
     const decryptedOtp = DecryptFE(OTP_FE);
@@ -267,8 +265,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
     }).sort({ Timestamp: -1 });
 
     if (!otpRecord) {
-      res.status(401).json({ status: 'error', message: 'OTP is Invalid' });
-      return;
+      return res.status(401).json({ status: 'error', message: 'OTP is Invalid' });
     }
 
     const currentTime = new Date();
@@ -279,8 +276,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
       otpRecord.Status = 3;
       otpRecord.ExpirationTimestamp = currentTime;
       await otpRecord.save();
-      res.status(410).json({ status: 'error', message: 'OTP has expired' });
-      return;
+      return res.status(410).json({ status: 'error', message: 'OTP has expired' });
     }
 
     otpRecord.Status = 1;
@@ -296,12 +292,12 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
       );
 
       if ((result as any).status === 'error') {
-        res.status(409).json(result);
-        return;
+        return res.status(409).json(result);
+
       }
 
-      res.status(200).json(result);
-      return;
+       return res.status(200).json(result);
+   
     } else if (FirstName && Password && Status === 1) {
       const doubleEncryptedPassword = EncryptBE(Password);
 
@@ -318,17 +314,15 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
       });
 
       if (!updatedUser) {
-        res.status(404).json({
+        return res.status(404).json({
           status: 'error',
           message: 'User not found',
         });
-        return;
       }
 
       res.status(200).json({ status: 'success', message: 'Password Reset success!' });
     } else {
-      res.status(200).json({ status: 'success', message: 'OTP has been verified successfully' });
-      return;
+      return res.status(200).json({ status: 'success', message: 'OTP has been verified successfully' });
     }
   } catch (error) {
     console.error('OTP verification error:', error);
@@ -336,7 +330,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const sign_in = async (req: Request, res: Response): Promise<void> => {
+export const sign_in = async (req: Request, res: Response): Promise<Response> => {
   try {
     const EncryptedEmail = EncryptBE(req.body.EmailID);
     const EncryptedPassword = EncryptBE(req.body.Password);
