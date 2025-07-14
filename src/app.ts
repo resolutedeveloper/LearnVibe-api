@@ -61,9 +61,11 @@ app.post('/decrypt', (req: Request, res: Response): void => {
 
 const PORT = process.env.PORT || 8000;
 
+console.log('test-cicd');
+
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
-
+  console.log(`🚀 Server running on port ${PORT}`);
   try {
     await connectDB();
   } catch (error) {
