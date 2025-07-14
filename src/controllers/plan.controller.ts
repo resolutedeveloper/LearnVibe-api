@@ -5,6 +5,7 @@ import UserStripe from '../models/userStripe.model';
 import QuizModel from '../models/quiz.model';
 import UserDocumentModel from '../models/userDocument.model';
 import UserModel from '../models/user.model';
+import { IQuiz } from '../models/quiz.model';
 import {
   EncryptBE,
   DecryptBE,
@@ -192,6 +193,11 @@ export const document_upload = async (req: Request, res: Response): Promise<Resp
 
     const TokenUser = req.TokenUser!._id;
     const UserSub = await UserSubscription.findOne({ UserID: TokenUser, Status: 1 });
+
+    if (!UserSub) {
+      return res.status(400).json({ error: 'User subscription not found' });
+    }
+
     // ✅ Step 2: Save to database
     const newDocument = new UserDocumentModel({
       UsersSubscriptionID: UserSub._id,
@@ -308,7 +314,7 @@ export const document_upload = async (req: Request, res: Response): Promise<Resp
     });
   } catch (error) {
     console.error('Upload Error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       status: 'error',
       message: 'Something went wrong.',
       error: (error as Error).message,
@@ -352,6 +358,10 @@ export const payment_detail = async (req: Request, res: Response): Promise<Respo
   const TokenUser = req.TokenUser!._id;
   const UserDetail = await UserModel.findOne({ _id: TokenUser });
   //decrypt, encrypt
+  if (!UserDetail?.EmailID) {
+    return res.status(400).json({ error: 'User email not found' });
+  }
+
   const DecryptEmail = DecryptBE(UserDetail.EmailID);
   const FinalDecryptEmail = DecryptFE(DecryptEmail);
 
@@ -612,7 +622,7 @@ export const subscribe = async (req: Request, res: Response): Promise<Response> 
       ],
     });
   } catch (error: any) {
-    res.status(500).json({
+    return res.status(500).json({
       status: 'error',
       message: error.message,
     });
@@ -644,7 +654,7 @@ export const quiz_pause_complete = async (req: Request, res: Response): Promise<
     };
     // Conditionally add Score if Status == 1
     if (Status == 1) {
-      updateData.Score = 900;
+      (updateData as any).Score = 900;
     }
 
     // Perform the update
@@ -670,7 +680,7 @@ export const quiz_pause_complete = async (req: Request, res: Response): Promise<
       QuzeMessage = 'Quiz pending successfully';
     }
 
-    const formattedData: QuizData = {
+    const formattedData: any = {
       ID: updatedQuiz._id,
       DocumentID: updatedQuiz.DocumentID,
       QuizJSON: updatedQuiz.QuizJSON,
@@ -688,6 +698,6 @@ export const quiz_pause_complete = async (req: Request, res: Response): Promise<
     });
   } catch (error) {
     console.error('Error updating quiz:', error);
-    res.status(500).json({ status: 'error', message: 'Internal server error' });
+    return res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 };

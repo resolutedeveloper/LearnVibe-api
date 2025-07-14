@@ -20,7 +20,7 @@ let transporter = nodemailer.createTransport({
   },
 });
 
-export const sendOTPEmail = async ({ to, otp }: EmailOptions): Promise<Response> => {
+export const sendOTPEmail = async ({ to, otp }: EmailOptions): Promise<void> => {
   const html = otpTemplate(otp);
 
   const mailOptions = {

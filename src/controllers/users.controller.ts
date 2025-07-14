@@ -40,7 +40,7 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
     }
 
     // Step 7: Send decrypted fields in response
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       UserID: updatedUser._id,
       FirstName: decryptedFirstName,
@@ -52,7 +52,7 @@ export const updateUser = async (req: Request, res: Response): Promise<Response>
     });
   } catch (error) {
     console.error('Update error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       status: 'error',
       message: 'Internal Server Error',
     });

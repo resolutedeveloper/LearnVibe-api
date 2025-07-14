@@ -182,10 +182,10 @@ export const registerUser = async (req: Request, res: Response): Promise<Respons
       return res.status(409).json(result);
     }
 
-    res.status(200).json(result);
+    return res.status(200).json(result);
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       status: 'error',
       message: 'Internal Server Error',
     });
@@ -207,17 +207,14 @@ export const sendOtp = async (req: Request, res: Response): Promise<Response> =>
 
       if (existingUser) {
         return res.status(400).json({ status: 'error', message: 'Email-ID already exists' });
-       
       }
     } else if (Status === 1) {
       const user = await Users.findOne({ EmailID: doubleEncryptedEmail });
       if (!user) {
         return res.status(404).json({ status: 'error', message: 'E-Mail ID is not valid' });
-   
       }
     } else {
       return res.status(400).json({ status: 'error', message: 'Invalid status' });
-  
     }
 
     const otp = await generateOtp();
@@ -237,10 +234,10 @@ export const sendOtp = async (req: Request, res: Response): Promise<Response> =>
 
     await sendOTPEmail({ to: decryptedEmail, otp });
 
-    res.status(200).json({ status: 'success', message: 'OTP sent successfully' });
+    return res.status(200).json({ status: 'success', message: 'OTP sent successfully' });
   } catch (error) {
     console.error('Send OTP error:', error);
-    res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
   }
 };
 
@@ -250,7 +247,6 @@ export const verifyOtp = async (req: Request, res: Response): Promise<Response> 
 
     if (!EmailID || !OTP_FE || typeof Status === 'undefined') {
       return res.status(400).json({ status: 'error', message: 'Missing required fields' });
-
     }
 
     const decryptedOtp = DecryptFE(OTP_FE);
@@ -293,11 +289,9 @@ export const verifyOtp = async (req: Request, res: Response): Promise<Response> 
 
       if ((result as any).status === 'error') {
         return res.status(409).json(result);
-
       }
 
-       return res.status(200).json(result);
-   
+      return res.status(200).json(result);
     } else if (FirstName && Password && Status === 1) {
       const doubleEncryptedPassword = EncryptBE(Password);
 
@@ -320,13 +314,15 @@ export const verifyOtp = async (req: Request, res: Response): Promise<Response> 
         });
       }
 
-      res.status(200).json({ status: 'success', message: 'Password Reset success!' });
+      return res.status(200).json({ status: 'success', message: 'Password Reset success!' });
     } else {
-      return res.status(200).json({ status: 'success', message: 'OTP has been verified successfully' });
+      return res
+        .status(200)
+        .json({ status: 'success', message: 'OTP has been verified successfully' });
     }
   } catch (error) {
     console.error('OTP verification error:', error);
-    res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    return res.status(500).json({ status: 'error', message: 'Internal Server Error' });
   }
 };
 
@@ -422,7 +418,7 @@ export const sign_in = async (req: Request, res: Response): Promise<Response> =>
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + subscription.Duration);
 
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       message: 'User signed in successfully.',
       data: [
@@ -467,7 +463,7 @@ export const sign_in = async (req: Request, res: Response): Promise<Response> =>
     });
   } catch (error) {
     console.error('Signup error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       status: 'error',
       message: 'Internal Server Error',
     });

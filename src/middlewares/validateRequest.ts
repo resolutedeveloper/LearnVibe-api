@@ -10,10 +10,11 @@ export const validateRequest = (schema: Joi.ObjectSchema) => {
     const { error } = schema.validate(req.body, { abortEarly: false });
 
     if (error) {
-      return res.status(400).json({
+      res.status(400).json({
         status: 'error',
         message: formatErrorMessages(error.details),
       });
+      return;
     }
 
     next();
