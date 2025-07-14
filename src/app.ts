@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import userRoutes from './routes/index.routes';
 import { connectDB } from './db/database';
 import { DecryptFE, EncryptFE, EncryptBE, DecryptBE } from './utils/encrypt';
+import type { Request, Response } from 'express';
 
 dotenv.config();
 

@@ -4,7 +4,7 @@ import { userValidationSchema, userUpdateValidationSchema } from '../validations
 import { validateRequest } from '../middlewares/validateRequest';
 import { tokenVerification } from '../middlewares/tokenVerification'; // ✅ match name: tokenVerification
 
-import { registerUser, sendOtp, sign_in, verifyOtp } from '../controllers/userAuth.controller';
+import { registerUser, sendOtp, sign_in, verifyOtp } from '../controllers/UserAuth.controller';
 import { updateUser } from '../controllers/users.controller';
 import { verifyOtpValidationSchema } from '../validations/otpValidations';
 
