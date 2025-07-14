@@ -336,7 +336,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const sign_in = async (req: Request, res: Response) => {
+export const sign_in = async (req: Request, res: Response): Promise<void> => {
   try {
     const EncryptedEmail = EncryptBE(req.body.EmailID);
     const EncryptedPassword = EncryptBE(req.body.Password);
