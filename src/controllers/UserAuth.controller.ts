@@ -480,7 +480,7 @@ export const sign_in = async (req: Request, res: Response): Promise<Response> =>
 
 export const webhook_payment = async (req: Request, res: Response): Promise<Response> => {
 	try {
-
+    console.log('webbbbbbbbbbbbbbb call');
 		const endpointSecret = "whsec_1kp8GR0oIicHW9Yd57QL2dh1UpEqPYGN";
 		const sigHeader = req.headers["stripe-signature"];
 
