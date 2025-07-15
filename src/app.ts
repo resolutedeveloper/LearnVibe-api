@@ -61,7 +61,7 @@ app.post('/decrypt', (req: Request, res: Response): void => {
 
 const PORT = process.env.PORT || 8000;
 
-app.use('/uploads', express.static('upload'));
+app.use('/uploads', express.static('uploads'));
 
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
