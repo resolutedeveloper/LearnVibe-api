@@ -27,6 +27,12 @@ const stripe = new Stripe(process.env.Secret_key as string, {
 
 export default stripe;
 
+import { Request } from "express";
+
+interface RawBodyRequest extends Request {
+  body: Buffer;
+}
+
 const createUserAndSubscription = async (
   email: string,
   firstName: string,
@@ -478,7 +484,8 @@ export const sign_in = async (req: Request, res: Response): Promise<Response> =>
   }
 };
 
-export const webhook_payment = async (req: Request, res: Response): Promise<Response> => {
+export const webhook_payment = async (req: RawBodyRequest, res: Response): Promise<Response> => {
+//export const webhook_payment = async (req: Request, res: Response): Promise<Response> => {
   try {
     console.log("webbbbbbbbbbbbbbb call");
 
