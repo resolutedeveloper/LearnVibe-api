@@ -9,6 +9,8 @@ import { updateUser } from '../controllers/users.controller';
 import { verifyOtpValidationSchema } from '../validations/otpValidations';
 import { asyncHandler } from '../utils/asyncHandler';
 
+import bodyParser from "body-parser";
+
 const router = express.Router();
 
 router.post('/sign-up', validateRequest(userValidationSchema), asyncHandler(registerUser));
@@ -21,5 +23,5 @@ router.post('/send-otp', asyncHandler(sendOtp));
 router.post('/verify-otp', validateRequest(verifyOtpValidationSchema), asyncHandler(verifyOtp));
 router.post('/sign-in', asyncHandler(sign_in)); // ✅ match name: token_verification
 
-router.post("/webhook-payment",	asyncHandler(webhook_payment));
+router.post("/webhook-payment",bodyParser.raw({ type: "application/json" }),	asyncHandler(webhook_payment));
 export default router;
