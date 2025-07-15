@@ -481,31 +481,33 @@ export const sign_in = async (req: Request, res: Response): Promise<Response> =>
 export const webhook_payment = async (req: Request, res: Response): Promise<Response> => {
 	try {
 		const endpointSecret = "whsec_1kp8GR0oIicHW9Yd57QL2dh1UpEqPYGN";
-		const sig = req.headers["stripe-signature"];
+		const sigHeader = req.headers["stripe-signature"];
+
+		if (!sigHeader || typeof sigHeader !== "string") {
+			return res.status(400).send("Missing or invalid Stripe signature header");
+		}
+
 		let event;
-		// ✅ Verify Stripe signature
 		try {
-			event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-		} catch (err) {
+			event = stripe.webhooks.constructEvent(req.body, sigHeader, endpointSecret);
+		} catch (err: any) {
 			console.log("Webhook signature failed:", err.message);
 			return res.status(400).send(`Webhook Error: ${err.message}`);
 		}
 
-		// ✅ Listen for subscription payment success
 		if (event.type === "invoice.payment_succeeded") {
 			const invoice = event.data.object;
-			console.log("invoice data", invoice);
+			console.log("✅ Invoice payment succeeded:", invoice);
 		}
 
-		// You can add more event types here
 		if (event.type === "invoice.payment_failed") {
 			console.log("❌ Invoice payment failed");
 		}
 
-		res.status(200).send("Webhook received");
-	} catch (error) {
+		return res.status(200).send("Webhook received");
+	} catch (error: any) {
 		console.log("Webhook Handler Error:", error);
-		res.status(500).json({
+		return res.status(500).json({
 			message: "Internal Server Error",
 			error: error.message,
 		});
