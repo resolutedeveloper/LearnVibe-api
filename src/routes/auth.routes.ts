@@ -23,5 +23,9 @@ router.post('/send-otp', asyncHandler(sendOtp));
 router.post('/verify-otp', validateRequest(verifyOtpValidationSchema), asyncHandler(verifyOtp));
 router.post('/sign-in', asyncHandler(sign_in)); // ✅ match name: token_verification
 
-router.post("/webhook-payment",bodyParser.raw({ type: "application/json" }),	asyncHandler(webhook_payment));
+router.post(
+  "/webhook-payment",
+  bodyParser.raw({ type: "application/json" }), // ✅ correct
+  asyncHandler(webhook_payment)
+);
 export default router;
