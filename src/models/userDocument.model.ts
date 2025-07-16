@@ -5,6 +5,7 @@ export interface IUserDocument extends Document {
   UserID: mongoose.Types.ObjectId;
   SubscriptionID: mongoose.Types.ObjectId;
   DocumentName: string;
+  UploadedDocumentName:string;
   DocumentUploadDateTime: Date;
   Status: number;
 }
@@ -15,6 +16,7 @@ const UserDocumentSchema: Schema = new Schema(
     UserID: { type: String, required: true, ref: 'User' },
     SubscriptionID: { type: String, required: true, ref: 'Subscription' },
     DocumentName: { type: String, required: true },
+    UploadedDocumentName: { type: String, required: true },
     DocumentUploadDateTime: { type: Date, default: Date.now },
     Status: { type: Number, required: true },
   },

@@ -204,10 +204,10 @@ export const document_upload = async (req: Request, res: Response): Promise<Resp
       UserID: TokenUser,
       SubscriptionID,
       DocumentName,
+      UploadedDocumentName:req.file.filename,
       DocumentUploadDateTime: new Date(),
       Status: 0,
     });
-
     const savedDoc = await newDocument.save();
 
     if (!savedDoc) {
@@ -295,20 +295,21 @@ export const document_upload = async (req: Request, res: Response): Promise<Resp
             DocumentName: savedDoc.DocumentName,
             DocumentUploadDateTime: savedDoc.DocumentUploadDateTime,
             Status: savedDoc.Status,
+            UploadedDocumentName: savedDoc.UploadedDocumentName,
           },
-
-          QuizDetails: [
-            {
-              ID: savedQuiz._id,
-              DocumentID: savedQuiz.DocumentID,
-              QuizJSON: savedQuiz.QuizJSON,
-              QuizResponseJSON: savedQuiz.QuizResponseJSON,
-              Score: savedQuiz.Score,
-              Status: savedQuiz.Status,
-              Priority: savedQuiz.Priority,
-              QuizAnswerHistory: savedQuiz.QuizAnswerHistory,
-            },
-          ],
+          QuizDetails: []
+          // QuizDetails: [
+          //   {
+          //     ID: savedQuiz._id,
+          //     DocumentID: savedQuiz.DocumentID,
+          //     QuizJSON: savedQuiz.QuizJSON,
+          //     QuizResponseJSON: savedQuiz.QuizResponseJSON,
+          //     Score: savedQuiz.Score,
+          //     Status: savedQuiz.Status,
+          //     Priority: savedQuiz.Priority,
+          //     QuizAnswerHistory: savedQuiz.QuizAnswerHistory,
+          //   },
+          // ],
         },
       ],
     });
@@ -698,41 +699,6 @@ export const quiz_pause_complete = async (req: Request, res: Response): Promise<
     });
   } catch (error) {
     console.error('Error updating quiz:', error);
-    return res.status(500).json({ status: 'error', message: 'Internal server error' });
-  }
-};
-
-export const user_history = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const userId = req.TokenUser!._id;
-
-    if (!userId) {
-      return res.status(400).json({ status: 'error', message: 'User ID is required' });
-    }
-
-    // Fetch user subscription details
-    const UsersSubscriptionDetails = await UserSubscription.find({ UserID: userId }).lean();
-
-    // Fetch user documents
-    const UserDocumentDetails = await UserDocumentModel.find({ UserID: userId }).lean();
-
-    // Extract all document IDs from the documents for quiz lookup
-    const documentIds = UserDocumentDetails.map((doc) => doc._id);
-
-    // Fetch all quizzes related to those documents
-    const Quiz = await QuizModel.find({ DocumentID: { $in: documentIds } }).lean();
-
-    return res.status(200).json({
-      status: 'success',
-      message: 'User history fetched successfully',
-      data: {
-        UsersSubscriptionDetails,
-        UserDocumentDetails,
-        Quiz,
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching user history:', error);
     return res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 };
