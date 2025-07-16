@@ -1,6 +1,6 @@
 import express, { RequestHandler } from 'express';
 
-import { userValidationSchema, userUpdateValidationSchema } from '../validations/userValidation';
+import { userValidationSchema, userUpdateValidationSchema, signinValidationSchema } from '../validations/userValidation';
 import { validateRequest } from '../middlewares/validateRequest';
 import { tokenVerification } from '../middlewares/tokenVerification'; // ✅ match name: tokenVerification
 
@@ -27,7 +27,7 @@ router.post(
 );
 router.post('/send-otp', asyncHandler(sendOtp));
 router.post('/verify-otp', validateRequest(verifyOtpValidationSchema), asyncHandler(verifyOtp));
-router.post('/sign-in', asyncHandler(sign_in)); // ✅ match name: token_verification
+router.post('/sign-in', validateRequest(signinValidationSchema), asyncHandler(sign_in)); // ✅ match name: token_verification
 router.post(
   '/webhook-payment',
   bodyParser.raw({ type: 'application/json' }), // ✅ correct
