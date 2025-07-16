@@ -27,8 +27,6 @@ const stripe = new Stripe(process.env.Secret_key as string, {
 
 export default stripe;
 
-import { Request } from 'express';
-
 interface RawBodyRequest extends Request {
   body: Buffer;
 }
@@ -99,7 +97,7 @@ const createUserAndSubscription = async (
   });
 
   // Step 9: Fetch associated document (if any)
-  const document = await UserDocumentModel.find({ UserID: user._id });
+  const document = await UserDocumentModel.findOne({ UserID: user._id });
 
   // Step 10: Fetch associated quiz (if document exists)
   let quiz = null;
