@@ -12,7 +12,7 @@ import { tokenVerification } from '../middlewares/tokenVerification'; // ✅ mat
 import { upload } from '../middlewares/multerConfig';
 
 import { subscriptionValidationSchema } from '../validations/subscribeValidation';
-import { QuizPauseCompleteValidationSchema } from '../validations/QuizPauseCompleteValidation';
+import { QuizPauseCompleteValidationSchema,uploadValidationSchema } from '../validations/QuizPauseCompleteValidation';
 
 import { validateRequest } from '../middlewares/validateRequest';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -23,6 +23,7 @@ router.get('/get-active-documents', tokenVerification, asyncHandler(get_active_d
 router.get('/history', tokenVerification, asyncHandler(user_history));
 router.post(
   '/document-upload',
+  validateRequest(uploadValidationSchema),
   upload.single('file'),
   tokenVerification,
   asyncHandler(document_upload)

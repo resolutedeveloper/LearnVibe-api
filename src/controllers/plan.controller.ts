@@ -184,10 +184,24 @@ export const document_upload = async (req: Request, res: Response): Promise<Resp
       return res.status(400).json({ status: 'error', message: 'No file uploaded.' });
     }
 
-    if (!SubscriptionID || !DocumentName) {
+    if (!SubscriptionID && !DocumentName) {
       return res.status(400).json({
         status: 'error',
-        message: 'Missing required fields.',
+        message: 'Please select a subscription plan and enter the document name.',
+      });
+    }
+
+    if (!SubscriptionID) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please select a subscription plan before proceeding.',
+      });
+    }
+
+    if (!DocumentName) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Please enter the document name.',
       });
     }
 

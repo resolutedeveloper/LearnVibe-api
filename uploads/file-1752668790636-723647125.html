@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Zoom Auto Join</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://source.zoom.us/uitoolkit/2.2.0-1/videosdk-ui-toolkit.css">
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    #sessionContainer {
+      height: 100vh;
+      width: 100vw;
+    }
+    #startBtn {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #000;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      z-index: 9999;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="sessionContainer"></div>
+  <div id="startBtn">Tap to Join Session</div>
+
+  <script src="https://source.zoom.us/uitoolkit/2.2.0-1/videosdk-ui-toolkit.min.umd.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const session_name = urlParams.get('session_name') || 'demo-session';
+    const display_name = urlParams.get('display_name') || 'Guest';
+    const role = urlParams.get('role') || '1';
+
+    const authEndpoint = "https://us.chat.devapi.boobud.com";
+    const uitoolkit = window.UIToolkit;
+    const sessionContainer = document.getElementById("sessionContainer");
+
+    const config = {
+      videoSDKJWT: "",
+      sessionName: session_name,
+      userName: display_name,
+      sessionPasscode: "",
+      video: true,
+      audio: true,
+      videoOptions: { cameraEnabled: true },
+      audioOptions: {
+        connect: false, // ✅ Don’t auto-connect mic
+        mute: false,
+        autoAdjustSpeakerVolume: false,
+      },
+      featuresOptions: {
+        video: { enable: true },
+        audio: { enable: true }
+      }
+    };
+
+    async function getJWTAndJoin() {
+      try {
+        const res = await fetch(`${authEndpoint}/api/web-zoom/signature`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionName: config.sessionName,
+            role: role,
+            videoWebRtcMode: 1,
+          }),
+        });
+
+        const data = await res.json();
+        if (!data.signature) throw new Error("JWT not received");
+
+        config.videoSDKJWT = data.signature;
+        joinSession();
+      } catch (err) {
+        console.error("JWT error:", err);
+        alert("Error joining session. Please try again.");
+      }
+    }
+
+    function joinSession() {
+      uitoolkit.joinSession(sessionContainer, config);
+
+      uitoolkit.onSessionClosed(() => {
+        console.log("Session closed by user or host");
+      });
+
+      uitoolkit.onSessionDestroyed(() => {
+        console.log("Session destroyed");
+        uitoolkit.destroy();
+      });
+    }
+
+    document.getElementById("startBtn").addEventListener("click", () => {
+      document.getElementById("startBtn").style.display = "none";
+
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(() => {
+          getJWTAndJoin();
+        })
+        .catch(() => {
+          alert(`Please allow microphone and camera access.
+
+iPhone Users:
+1. Open in Safari
+2. Go to Settings > Safari > Camera & Microphone > Allow
+3. Refresh and try again.`);
+        });
+    });
+  </script>
+</body>
+</html>
