@@ -701,3 +701,38 @@ export const quiz_pause_complete = async (req: Request, res: Response): Promise<
     return res.status(500).json({ status: 'error', message: 'Internal server error' });
   }
 };
+
+export const user_history = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const userId = req.TokenUser!._id;
+
+    if (!userId) {
+      return res.status(400).json({ status: 'error', message: 'User ID is required' });
+    }
+
+    // Fetch user subscription details
+    const UsersSubscriptionDetails = await UserSubscription.find({ UserID: userId }).lean();
+
+    // Fetch user documents
+    const UserDocumentDetails = await UserDocumentModel.find({ UserID: userId }).lean();
+
+    // Extract all document IDs from the documents for quiz lookup
+    const documentIds = UserDocumentDetails.map((doc) => doc._id);
+
+    // Fetch all quizzes related to those documents
+    const Quiz = await QuizModel.find({ DocumentID: { $in: documentIds } }).lean();
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'User history fetched successfully',
+      data: {
+        UsersSubscriptionDetails,
+        UserDocumentDetails,
+        Quiz,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching user history:', error);
+    return res.status(500).json({ status: 'error', message: 'Internal server error' });
+  }
+};

@@ -6,6 +6,7 @@ import {
   subscribe,
   payment_detail,
   quiz_pause_complete,
+  user_history,
 } from '../controllers/plan.controller';
 import { tokenVerification } from '../middlewares/tokenVerification'; // ✅ match name: tokenVerification
 import { upload } from '../middlewares/multerConfig';
@@ -19,6 +20,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 const router = express.Router();
 router.get('/subscription-list', tokenVerification, asyncHandler(plan_list)); // ✅ match name: token_verification
 router.get('/get-active-documents', tokenVerification, asyncHandler(get_active_documents)); // ✅ match name: token_verification
+router.get('/history', tokenVerification, asyncHandler(user_history));
 router.post(
   '/document-upload',
   upload.single('file'),

@@ -27,7 +27,7 @@ const stripe = new Stripe(process.env.Secret_key as string, {
 
 export default stripe;
 
-import { Request } from "express";
+import { Request } from 'express';
 
 interface RawBodyRequest extends Request {
   body: Buffer;
@@ -99,7 +99,7 @@ const createUserAndSubscription = async (
   });
 
   // Step 9: Fetch associated document (if any)
-  const document = await UserDocumentModel.findOne({ SubscriptionID: subscription._id });
+  const document = await UserDocumentModel.find({ UserID: user._id });
 
   // Step 10: Fetch associated quiz (if document exists)
   let quiz = null;
@@ -135,7 +135,8 @@ const createUserAndSubscription = async (
       CreatedBy: decryptedFirstName,
       LastModifiedOn: now,
       LastModifiedBy: decryptedFirstName,
-      SubscriptionDetails: {
+      UserSubscriptionDetails: {
+        ID: userSubscription._id,
         SubscriptionID: subscription._id,
         StartDate: startDate.toISOString().split('T')[0],
         EndDate: endDate.toISOString().split('T')[0],
@@ -145,16 +146,20 @@ const createUserAndSubscription = async (
         PaymentDuration: subscription.Duration,
         PaymentCurrency: 'USD',
       },
-      UserSubscriptionDetails: {
-        id: userSubscription._id,
-        SubscriptionID: userSubscription.SubscriptionID,
-        StartDate: startDate.toISOString().split('T')[0],
-        EndDate: endDate.toISOString().split('T')[0],
-        ExhaustDate: null,
-        ActualEndDate: null,
-        PaymentAmount: userSubscription.PaymentAmount,
-        PaymentDuration: userSubscription.PaymentDuration,
-        PaymentCurrency: userSubscription.PaymentCurrency,
+      SubscriptionDetails: {
+        ID: subscription._id,
+        SubscriptionTitle: subscription.SubscriptionTitle,
+        IsFree: subscription.IsFree,
+        Price: subscription.Price,
+        Duration: subscription.Duration,
+        NumOfDocuments: subscription.NumOfDocuments,
+        NoOfPages: subscription.NoOfPages,
+        NumOfQuiz: subscription.NumOfQuiz,
+        AllowedFormats: subscription.AllowedFormats,
+        NumberOfQuest: subscription.NumberOfQuest,
+        DifficultyLevels: subscription.DifficultyLevels,
+        IsActive: subscription.IsActive,
+        IsDefault: subscription.IsDefault,
       },
       DocumentDetails: document
         ? {
@@ -486,13 +491,13 @@ export const sign_in = async (req: Request, res: Response): Promise<Response> =>
 
 export const webhook_payment = async (req: RawBodyRequest, res: Response): Promise<Response> => {
   try {
-    console.log("webbbbbbbbbbbbbbb call");
+    console.log('webbbbbbbbbbbbbbb call');
 
-    const endpointSecret = "whsec_1kp8GR0oIicHW9Yd57QL2dh1UpEqPYGN";
-    const sigHeader = req.headers["stripe-signature"];
+    const endpointSecret = 'whsec_1kp8GR0oIicHW9Yd57QL2dh1UpEqPYGN';
+    const sigHeader = req.headers['stripe-signature'];
 
-    if (!sigHeader || typeof sigHeader !== "string") {
-      return res.status(400).send("Missing or invalid Stripe signature header");
+    if (!sigHeader || typeof sigHeader !== 'string') {
+      return res.status(400).send('Missing or invalid Stripe signature header');
     }
 
     let event: Stripe.Event;
@@ -501,32 +506,31 @@ export const webhook_payment = async (req: RawBodyRequest, res: Response): Promi
       // ✅ req.body is a Buffer here!
       event = stripe.webhooks.constructEvent(req.body, sigHeader, endpointSecret);
     } catch (err: any) {
-      console.log("Webhook signature failed:", err.message);
+      console.log('Webhook signature failed:', err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     // ✅ Handle Stripe events
     switch (event.type) {
-      case "invoice.payment_succeeded":
+      case 'invoice.payment_succeeded':
         const invoice = event.data.object as Stripe.Invoice;
-        console.log("✅ Invoice payment succeeded:", invoice.id);
+        console.log('✅ Invoice payment succeeded:', invoice.id);
         break;
 
-      case "invoice.payment_failed":
-        console.log("❌ Invoice payment failed");
+      case 'invoice.payment_failed':
+        console.log('❌ Invoice payment failed');
         break;
 
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
 
-    return res.status(200).send("Webhook received");
+    return res.status(200).send('Webhook received');
   } catch (error: any) {
-    console.log("Webhook Handler Error:", error);
+    console.log('Webhook Handler Error:', error);
     return res.status(500).json({
-      message: "Internal Server Error",
+      message: 'Internal Server Error',
       error: error.message,
     });
   }
 };
-
