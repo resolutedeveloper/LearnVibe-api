@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 //New encryption and decryption
 const BE_SECRET_KEY = process.env.Enc_S_Key_BE || 'learnvibenet123';
 const BE_SALT = process.env.Enc_S_Key_BE || 'learnvibenet123';
-// const FE_SECRET_KEY = process.env.Enc_S_Key_FE || 'learnvibenet123';
+const FE_SECRET_KEY = process.env.Enc_S_Key_FE || 'learnvibenet123';
 const FE_SALT = process.env.Enc_S_Key_FE || 'learnvibenet123';
 const PEPPER = process.env.PASSWORD_PEPPER || 'learnvibenet123';
 
@@ -32,7 +32,6 @@ export const DecryptBE = (encryptedText: string): string => {
 
 // FrontEnd
 // 16-character IV
-const FE_SECRET_KEY = 'learnvibenet1234567890123456';
 const IV = CryptoJS.enc.Utf8.parse('1234567890123456');
 
 export const EncryptFE = (text: string): string => {
