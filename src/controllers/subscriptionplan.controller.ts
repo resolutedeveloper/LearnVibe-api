@@ -31,6 +31,7 @@ export const subscription = async (req: Request, res: Response): Promise<Respons
         message: payload.SubscriptionTitle + ' already exists'
       });
     }
+    // return res.json(DecryptBE(req.TokenUser.FirstName));
     const decryptedName =
       req?.TokenUser?.FirstName && DecryptFE(DecryptBE(req.TokenUser.FirstName));
 
