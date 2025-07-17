@@ -28,10 +28,8 @@ export const DecryptBE = (encryptedText: string): string => {
 };
 
 // FrontEnd
-const FE_SECRET_KEY = Buffer.from(
-  `,(O0,[AhR@T&q=7"eHhm{$WZt[dae?IU&;(pHPC"8-RTRwOD'(>hM:K/YWv.&SD`,
-  'base64'
-);
+const key = process.env.Enc_S_Key_FE || 'LefjQ2pEXmiy/nNZvEJ43i8hJuaAnzbA1Cbn1hOuAgA=';
+const FE_SECRET_KEY = Buffer.from(key, 'base64');
 const iv = Buffer.from('1020304050607080', 'utf8');
 
 export const EncryptFE = (text: string): string => {
