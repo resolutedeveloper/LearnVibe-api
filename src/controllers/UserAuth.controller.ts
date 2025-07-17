@@ -126,8 +126,8 @@ const createUserAndSubscription = async (
     message: 'User Created!',
     data: {
       ID: user._id,
-      FirstName: decryptedFirstName,
-      EmailID: decryptedEmailID,
+      FirstName: firstName,
+      EmailID: email,
       LoginToken: token,
       CreatedOn: now,
       CreatedBy: decryptedFirstName,
