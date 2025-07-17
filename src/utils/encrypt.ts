@@ -7,9 +7,6 @@ import bcrypt from 'bcrypt';
 //New encryption and decryption
 const BE_SECRET_KEY = process.env.Enc_S_Key_BE || 'learnvibenet123';
 const BE_SALT = process.env.Enc_S_Key_BE || 'learnvibenet123';
-const FE_SECRET_KEY = process.env.Enc_S_Key_FE || 'learnvibenet123';
-const FE_SALT = process.env.Enc_S_Key_FE || 'learnvibenet123';
-const PEPPER = process.env.PASSWORD_PEPPER || 'learnvibenet123';
 
 // BackEnd
 export const EncryptBE = (text: string): string => {
@@ -31,44 +28,34 @@ export const DecryptBE = (encryptedText: string): string => {
 };
 
 // FrontEnd
-// 16-character IV
-const IV = CryptoJS.enc.Utf8.parse('1234567890123456');
+const FE_SECRET_KEY = Buffer.from(
+  `,(O0,[AhR@T&q=7"eHhm{$WZt[dae?IU&;(pHPC"8-RTRwOD'(>hM:K/YWv.&SD`,
+  'base64'
+);
+const iv = Buffer.from('1020304050607080', 'utf8');
 
 export const EncryptFE = (text: string): string => {
-  const key = CryptoJS.enc.Utf8.parse(FE_SECRET_KEY);
-
-  const encrypted = CryptoJS.AES.encrypt(text, key, {
-    iv: IV,
-    padding: CryptoJS.pad.Pkcs7,
-    mode: CryptoJS.mode.CBC,
-  });
-
-  return encrypted.toString(); // base64 encoded
+  const cipher = crypto.createCipheriv('aes-256-cbc', FE_SECRET_KEY, iv);
+  let encrypted = cipher.update(text, 'utf8');
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return encrypted.toString('base64');
 };
 
 export const DecryptFE = (encryptedText: string): string => {
-  const key = CryptoJS.enc.Utf8.parse(FE_SECRET_KEY);
-
-  try {
-    const bytes = CryptoJS.AES.decrypt(encryptedText, key, {
-      iv: IV,
-      padding: CryptoJS.pad.Pkcs7,
-      mode: CryptoJS.mode.CBC,
-    });
-
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    return decrypted;
-  } catch (error) {
-    console.log('Decryption error:', error);
-    return '';
-  }
+  const encryptedBuffer = Buffer.from(encryptedText, 'base64');
+  const decipher = crypto.createDecipheriv('aes-256-cbc', FE_SECRET_KEY, iv);
+  let decrypted = decipher.update(encryptedBuffer);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString('utf8');
 };
 
 //Hash Password Bcrypt
+const PEPPER = process.env.PASSWORD_PEPPER || 'learnvibenet123';
 //Use any Controller
 // const hashed = await createPasswordHash('123');
 // const isValid = await checkPasswordHash('123', '$2b$10$TqWJZoljp1Nq1nzgurOFVuvBcscpM2WXOAVQKLsWwU0Uors8h9fc6');
 // return res.json({ hashedPassword: isValid });
+
 export const createPasswordHash = async (plainPassword: string): Promise<string> => {
   const saltedPassword = plainPassword + PEPPER;
   const hashedPassword = await bcrypt.hash(saltedPassword, 10);
